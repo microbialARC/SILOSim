@@ -8,7 +8,6 @@ usage:  profiler [-h] --input_genome INPUT_GENOME [--output OUTPUT] --species {s
                  [--whatsgnu_db_path WHATSGNU_DB_PATH] [-t THREADS] [--prefix PREFIX] [--conda_prefix CONDA_PREFIX]
                  [--force]
 
-options:
   -h, --help            show this help message and exit
   --input_genome INPUT_GENOME
                         Path to genome assembly in FASTA format
@@ -20,15 +19,17 @@ options:
                         sepi: Staphylococcus epidermidis
                         cdiff: Clostridium difficile
                         kp: Klebsiella pneumoniae
+  --local_query_dir LOCAL_QUERY_DIR
+                        Path to the local query directory containing genome assemblies in FASTA format.If provided, the pipeline will use these local genomes for profiling instead of downloading them from NCBI.The WhatsGNU-based approach to fetch top genomes will be skipped if this option is provided.
   --top_genomes TOP_GENOMES
                         Number of initial top genomes for profiling before applying the ANI exclusion threshold (default: 1000).
-  --ani_threshold ANI_THRESHOLD
-                        Average Nucleotide Identity (ANI) exclusion threshold (default: 99.5).
-                        Genomes with ANI below this value will be removed from the profiling analysis.
   --cov_cutoff COV_CUTOFF
                         Coverage cutoff for MGE inference.
                         Genomic regions with coverage above this cutoff will be inferred as MGEs.
                         Default is 0.7.
+  --ani_threshold ANI_THRESHOLD
+                        Average Nucleotide Identity (ANI) exclusion threshold (default: 99.5).
+                        Genomes with ANI below this value will be removed from the profiling analysis.
   --bakta_db_type BAKTA_DB_TYPE
                         Bakta database.
                         Available options: [full, light]
@@ -66,31 +67,35 @@ options:
 ## Optional Input
 1. **Output Directory(--output):**
     - Path to the output directory. If not provided, defaults to `silosim_profiler_output_<YYYY_MM_DD_HHMMSS>` under the current working directory.
-2. **Top Genomes(--top_genomes):**
+2. **Local Query Directory(--local_query_dir):**
+    - Path to the local query directory containing genome assemblies in FASTA format.
+    - If provided, the pipeline will use these local genomes for profiling instead of downloading them from NCBI.
+    - The WhatsGNU-based approach to fetch top genomes will be skipped if this option is provided.
+3. **Top Genomes(--top_genomes):**
     - Number of initial top genomes for profiling before applying the ANI exclusion threshold (default: 1000).
-3. **ANI Exclusion Threshold(--ani_threshold):**
+4. **ANI Exclusion Threshold(--ani_threshold):**
     - Average Nucleotide Identity (ANI) exclusion threshold (default: 99.5).
     - Genomes with ANI below this value will be removed from the profiling analysis.
-4. **Bakta Database Type(--bakta_db_type) and Path(--bakta_db_path):**
+5. **Bakta Database Type(--bakta_db_type) and Path(--bakta_db_path):**
     - Specify the type of Bakta database (`full` or `light`, default is `full`).
     - Path to an existing Bakta database. If not provided, the database will be downloaded to `<OUTPUT>/bakta/db`.
-5. **WhatsGNU Database Path(--whatsgnu_db_path):**
+6. **WhatsGNU Database Path(--whatsgnu_db_path):**
 
     Path to an existing WhatsGNU database. If not provided, the database will be downloaded to `<OUTPUT>/whatsgnu/db`.
-6. **Coverage Cutoff(--cov_cutoff):**
+7. **Coverage Cutoff(--cov_cutoff):**
 
     Coverage cutoff for MGE inference. Genomic regions with coverage above this cutoff will be inferred as MGEs.
     Default is 0.7, which means genomic regions with coverage above 70% will be inferred as MGEs.
-7. **Threads(--threads / -t):**
+8. **Threads(--threads / -t):**
 
     Number of threads to use (default is 1). It is highly recommended to increase the thread count using this option to improve performance, regardless of dataset size.
-8. **Prefix(--prefix):**
+9. **Prefix(--prefix):**
 
     Prefix for config file, output files, and analysis naming. If not provided, defaults to a timestamp in the format `YYYY_MM_DD_HHMMSS`.
-9. **Conda Prefix(--conda_prefix):**
+10. **Conda Prefix(--conda_prefix):**
 
     Directory for conda environments needed for this analysis. If not provided, defaults to `<OUTPUT>/conda_envs_<YYYY_MM_DD_HHMMSS>`.
-10. **Force Execution(--force):**
+11. **Force Execution(--force):**
 
     Bypass system compatibility checks (operating system and available RAM) and force execution of the pipeline. This may cause instability or failures.  
 

@@ -2,7 +2,7 @@
 """SILOSim Main Entry
 This script creates the configuration files and executes the Snakemake workflow.
 """
-VERSION = "0.1.0-beta"
+VERSION = "0.1.1-beta"
 
 # Import standard libraries and custom modules
 import argparse
@@ -229,21 +229,37 @@ def main():
     
     # For profiler, check OS and RAM
     if args.command == "profiler":
-        # For profiler, check OS and RAM
-        if not args.force:
-            # Check OS and abort early on failure
-            if (check_os_rc := check_os(term_width)):
-                return check_os_rc
-            # Check if RAM is enough (at least 40 GB for WhatsGNU database loading)
-            if (check_ram_rc := check_ram(term_width, 40)):
-                return check_ram_rc
-            print(f"RAM check passed for SILOSim Mode: {args.command}. Proceeding...")
-        elif args.force:
-            print()
-            print("=" * term_width)
-            print("Bypassing OS and RAM checks".center(term_width))
-            print("=" * term_width)
-            print(f"\033[93m--force flag set: skipping OS and RAM checks for function: {args.command}.\nProceeding may lead to dependency errors during execution.\033[0m")
+        # For profiler, if public query is used, check OS and RAM
+        # Otherwise RAM is not checked as WhatsGNU is not used
+        if not args.local_query_dir:
+            print(f"\nSILOSim Mode: {args.command} with public query genomes. Checking OS and RAM...".center(term_width))
+            if not args.force:
+                # Check OS and abort early on failure
+                if (check_os_rc := check_os(term_width)):
+                    return check_os_rc
+                # Check if RAM is enough (at least 40 GB for WhatsGNU database loading)
+                if (check_ram_rc := check_ram(term_width, 40)):
+                    return check_ram_rc
+                print(f"RAM check passed for SILOSim Mode: {args.command}. Proceeding...")
+            elif args.force:
+                print()
+                print("=" * term_width)
+                print("Bypassing OS and RAM checks".center(term_width))
+                print("=" * term_width)
+                print(f"\033[93m--force flag set: skipping OS and RAM checks for function: {args.command}.\nProceeding may lead to dependency errors during execution.\033[0m")
+        else:
+            print(f"\nSILOSim Mode: {args.command} with local query genomes. Checking OS only...".center(term_width))
+            if not args.force:
+                # Check OS and abort early on failure
+                if (check_os_rc := check_os(term_width)):
+                    return check_os_rc
+                print(f"OS check passed for SILOSim Mode: {args.command}. Proceeding...")
+            elif args.force:
+                print()
+                print("=" * term_width)
+                print("Bypassing OS check".center(term_width))
+                print("=" * term_width)
+                print(f"\033[93m--force flag set: skipping OS check for function: {args.command}.\nProceeding may lead to dependency errors during execution.\033[0m")
     elif args.command == "simulator":
         # For evo_simulator, only check OS
         if not args.force:

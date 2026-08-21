@@ -7,13 +7,14 @@ def profiler_config(args):
         'prefix': args.prefix,
         'input_genome': args.input_genome,
         'output': args.output,
+        'species': args.species,
+        'local_query_dir': args.local_query_dir,
         'top_genomes': args.top_genomes,
-        'ani_threshold': args.ani_threshold,
         'cov_cutoff': args.cov_cutoff,
+        'ani_threshold': args.ani_threshold,
         'bakta_db_type': args.bakta_db_type,
         'bakta_db_path': args.bakta_db_path,
         'whatsgnu_db_path': args.whatsgnu_db_path,
-        'species': args.species,
         'threads': args.threads
     }
     # If thread is 1, give warning about long runtime for large datasets

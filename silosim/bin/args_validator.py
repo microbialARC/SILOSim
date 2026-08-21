@@ -34,9 +34,6 @@ def validate_profiler(args):
         args.output = os.path.abspath(args.output)
     else:
         args.output = os.path.abspath(args.output)
-    # Check top_genomes
-    if args.top_genomes < 100:
-        raise ValidationError("top_genomes must be at least 100 for reliable profiling")
     
     # Check ani_threshold
     if not args.ani_threshold:
@@ -60,19 +57,65 @@ def validate_profiler(args):
     if not args.conda_prefix:
         print("Conda environment path not provided, using default path: <OUTPUT>/conda_envs_<YYYY_MM_DD_HHMMSS>")
         args.conda_prefix = os.path.abspath(f"{args.output}/conda_envs_{args.prefix}")
-    
-    # Check whatsgnu_db_path
-    if not args.whatsgnu_db_path:
-        print(f"WhatsGNU database path not provided. WhatsGNU database will be downloaded to {args.output}/whatsgnu/db")
+
+    # Check whether local_query_dir is provided
+    if args.local_query_dir:
+        # args.whatsgnu_db_path and args.top_genomes will be automatically assigned to None if local_query_dir is provided
         args.whatsgnu_db_path = "None"
+        args.top_genomes = 0
+        # Normalize to an absolute path before any checks so error messages,
+        # the config file, and the Snakemake rules all see the same resolved path
+        args.local_query_dir = os.path.abspath(os.path.expanduser(args.local_query_dir))
+
+        if not os.path.isdir(args.local_query_dir):
+            raise ValidationError(f"Local query directory not found: {args.local_query_dir}")
+        else:
+            print(f"Local query directory found at: {args.local_query_dir}")
+            # Check if the local_query_dir contains any fasta files
+            fasta_files = [f for f in os.listdir(args.local_query_dir) if f.endswith(".fasta") or f.endswith(".fa") or f.endswith(".fna")]
+            if not fasta_files:
+                raise ValidationError(f"No FASTA files found in the local query directory: {args.local_query_dir}")
+            else:
+                print(f"Found {len(fasta_files)} FASTA files in the local query directory: {args.local_query_dir}")
+                # Fail fast on stem collisions: the pipeline links every query genome into a
+                # shared directory as <stem>.fna, so two files differing only by extension
+                # would overwrite each other.
+                stems = {}
+                for f in fasta_files:
+                    stems.setdefault(os.path.splitext(f)[0], []).append(f)
+
+                collisions = {s: fs for s, fs in stems.items() if len(fs) > 1}
+                if collisions:
+                    detail = "\n".join(
+                        f"  {s}: {', '.join(sorted(fs))}" for s, fs in sorted(collisions.items())
+                    )
+                    raise ValidationError(
+                        "Multiple files in the local query directory share a genome name "
+                        f"after the extension is removed:\n{detail}\n"
+                        "Keep one file per genome, or rename them uniquely.")
+                
+                print(f"All FASTA files in the local query directory have unique stems: {args.local_query_dir}")
+
     else:
-        # Check if the file exists in the provided whatsgnu_db_path)
-        if not os.path.exists(args.whatsgnu_db_path):
-            print(f"WhatsGNU database file not found in the provided whatsgnu_db_path: {args.whatsgnu_db_path}")
-            print(f"WhatsGNU database will be downloaded to {args.output}/whatsgnu/db")
+        # If args.local_query_dir is not provided, check args.whatsgnu_db_path and args.top_genomes
+        # And assign "None" to args.local_query_dir
+        args.local_query_dir = "None"
+        # Only check whatsgnu_db_path and top_genomes when local_query_dir is not provided
+        # Check whatsgnu_db_path
+        if not args.whatsgnu_db_path:
+            print(f"WhatsGNU database path not provided. WhatsGNU database will be downloaded to {args.output}/whatsgnu/db")
             args.whatsgnu_db_path = "None"
         else:
-            print(f"WhatsGNU database file found at: {args.whatsgnu_db_path}")
+            # Check if the file exists in the provided whatsgnu_db_path)
+            if not os.path.exists(args.whatsgnu_db_path):
+                print(f"WhatsGNU database file not found in the provided whatsgnu_db_path: {args.whatsgnu_db_path}")
+                print(f"WhatsGNU database will be downloaded to {args.output}/whatsgnu/db")
+                args.whatsgnu_db_path = "None"
+            else:
+                print(f"WhatsGNU database file found at: {args.whatsgnu_db_path}")
+        # Check top_genomes
+        if args.top_genomes < 100:
+            raise ValidationError("top_genomes must be at least 100 for reliable profiling")
 
     # Check bakta_db_path and bakta_db_type
     if not args.bakta_db_path:

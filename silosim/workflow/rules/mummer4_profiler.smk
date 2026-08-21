@@ -28,6 +28,16 @@ rule mummer4_profiler_exec:
         output_dir={params.output_dir}
         coords_list_path={output.coords_list}
         snps_list_path={output.snps_list}
+        mkdir -p "$output_dir"
+
+        if [ ! -s "{input.script_list}" ]; then
+            echo "ERROR: no MUMmer4 commands to run - {input.script_list} is empty." >&2
+            echo "All reference genomes were filtered out at the ANI threshold." >&2
+            exit 1
+        fi
+
+        # Drop results from any previous run so the lists below reflect this run only
+        rm -f "$output_dir"/*.coords "$output_dir"/*.snps
         
         # Parallel execution of MUMmer4 commands from the script list 
         module load parallel    

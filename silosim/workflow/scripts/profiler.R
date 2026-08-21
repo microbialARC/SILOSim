@@ -101,7 +101,9 @@ concat_genome <- function(input_genome_name,
   input_genome_fasta <- readDNAStringSet(input_genome_path)
   
   if(length(input_genome_fasta) > 1){
-    
+
+    # nucmer only takes the first word, separated by space, of the fasta header as the contig name,
+    # so we need to match that with the original contig name in ctg_pos_df
     names(input_genome_fasta) <- sapply(seq_along(names(input_genome_fasta)),
                                         function(ctg_idx){
                                           strsplit(names(input_genome_fasta)[ctg_idx],split = " ")[[1]][1]
@@ -136,7 +138,7 @@ concat_genome <- function(input_genome_name,
     # get the position matching data frame
     # no change to position
     ctg_pos_df <- data.frame(
-      ctg = names(input_genome_fasta),
+      ctg = strsplit(names(input_genome_fasta),split = " ")[[1]][1],
       length = width(input_genome_fasta),
       new_start = 1,
       new_end = width(input_genome_fasta)

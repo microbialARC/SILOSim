@@ -36,6 +36,15 @@ kp: Klebsiella pneumoniae"""
     )
 
     profiler_parser.add_argument(
+        "--local_query_dir",
+        type=str,
+        required=False,
+        help="""Path to the local query directory containing genome assemblies in FASTA format.
+If provided, the WhatsGNU-based approach to fetch top genomes will be skipped.
+The pipeline will use these local genomes for profiling."""
+    )
+
+    profiler_parser.add_argument(
         "--top_genomes",
         type=int,
         default=1000,

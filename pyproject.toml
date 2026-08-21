@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "silosim"
-version = "0.1.0-beta"
+version = "0.1.1-beta"
 description = "SILOsim: A data-driven framework that profiles per-site bacterial genome variability and simulates evolution."
 readme = "README.md"
 authors = [
