@@ -63,8 +63,8 @@ Default is 0.7."""
     profiler_parser.add_argument(
         "--ani_threshold",
         type=float,
-        default=99.5,
-        help="""Average Nucleotide Identity (ANI) exclusion threshold (default: 99.5).
+        default=95,
+        help="""Average Nucleotide Identity (ANI) exclusion threshold (default: 95).
 Genomes with ANI below this value will be removed from the profiling analysis."""
     )
 

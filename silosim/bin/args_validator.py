@@ -36,13 +36,13 @@ def validate_profiler(args):
         args.output = os.path.abspath(args.output)
     
     # Check ani_threshold
-    if not args.ani_threshold:
-        print("ani_threshold not provided, using default 99.5")
-        args.ani_threshold = 99.5
-    elif args.ani_threshold < 95 or args.ani_threshold > 100:
-        print("Warning: ani_threshold must be between 95 and 100 for reliable profiling.\n"
-        "Using default threshold 99.5.")
-        args.ani_threshold = 99.5
+    if args.ani_threshold is None:
+        print("ani_threshold not provided, using default 95")
+        args.ani_threshold = 95
+    elif args.ani_threshold < 90 or args.ani_threshold > 100:
+        print("Warning: ani_threshold must be between 90 and 100 for reliable profiling.\n"
+        "Using default threshold 95.")
+        args.ani_threshold = 95
 
     # Check cov_cutoff
     if not args.cov_cutoff:

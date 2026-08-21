@@ -28,7 +28,7 @@ usage:  profiler [-h] --input_genome INPUT_GENOME [--output OUTPUT] --species {s
                         Genomic regions with coverage above this cutoff will be inferred as MGEs.
                         Default is 0.7.
   --ani_threshold ANI_THRESHOLD
-                        Average Nucleotide Identity (ANI) exclusion threshold (default: 99.5).
+                        Average Nucleotide Identity (ANI) exclusion threshold (default: 95).
                         Genomes with ANI below this value will be removed from the profiling analysis.
   --bakta_db_type BAKTA_DB_TYPE
                         Bakta database.
@@ -74,7 +74,7 @@ usage:  profiler [-h] --input_genome INPUT_GENOME [--output OUTPUT] --species {s
 3. **Top Genomes(--top_genomes):**
     - Number of initial top genomes for profiling before applying the ANI exclusion threshold (default: 1000).
 4. **ANI Exclusion Threshold(--ani_threshold):**
-    - Average Nucleotide Identity (ANI) exclusion threshold (default: 99.5).
+    - Average Nucleotide Identity (ANI) exclusion threshold (default: 95).
     - Genomes with ANI below this value will be removed from the profiling analysis.
 5. **Bakta Database Type(--bakta_db_type) and Path(--bakta_db_path):**
     - Specify the type of Bakta database (`full` or `light`, default is `full`).

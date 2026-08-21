@@ -75,14 +75,27 @@ rule fastani_profiler_raw:
             exit 1
         fi
 
-        # Run FastANI
+        # Run FastANI in both modes. In local mode the ANI values are reported for inspection only
+        # They do NOT decide which genomes are carried forward.
+        # As user is expected to have the expertise to select the genomes they want to keep, 
+        # and they may want to keep genomes with ANI below the threshold.
+        # In public mode, the ANI values are used to filter the top genomes based on the ANI threshold.
+        echo "[fastani_profiler_raw] running fastANI"
         fastANI -q "$reference_genome_path" \
                 --rl "$topgenomes_all_path" \
                 --threads {threads} \
                 --output "$fastani_result"
 
-        # Filter FastANI result based on ANI threshold
-        # Column 3 in FastANI output contains the ANI values
-        # Only return Column 2 (top genome path) to the filtered output file
-        awk -v threshold="$ani_threshold" '$3 >= threshold {{print $2}}' "$fastani_result" > "$topgenomes_filtered_path"
+        if [ "${{local_query_dir}}" != "None" ]; then
+            # All of them are kept and ani_threshold is ignored.
+            cp "$topgenomes_all_path" "$topgenomes_filtered_path"
+            n_kept=$(wc -l < "$topgenomes_filtered_path")
+            echo "[fastani_profiler_raw] local mode: ANI filter skipped, keeping all ${{n_kept}} genome(s)"
+
+        else
+            # PUBLIC MODE: filter FastANI result based on ANI threshold.
+            # Column 3 in FastANI output contains the ANI values.
+            # Only return Column 2 (top genome path) to the filtered output file.
+            awk -v threshold="$ani_threshold" '$3 >= threshold {{print $2}}' "$fastani_result" > "$topgenomes_filtered_path"
+        fi
         """
