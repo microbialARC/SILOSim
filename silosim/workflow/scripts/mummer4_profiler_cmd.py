@@ -46,7 +46,9 @@ def get_mummer4_commands(reference_genome_name, reference_genome_path, topgenome
             compare_prefix = f"{reference_genome_name}_{topgenome_name}"
             topgenome_cmd = ["#!/bin/bash",
                              f"cd {output_dir}",
-                             f"nucmer {reference_genome_path} {topgenome_path} -p {compare_prefix}",
+                             # Set the --maxmatch and -l 50 flags to avoid missing alignments in repetitive regions and to set the minimum length of a match to 50 bp
+                             # This avoids abnormal surge in RAM usage which will cause OOM inevitably
+                             f"nucmer --maxmatch -l 50 {reference_genome_path} {topgenome_path} -p {compare_prefix}",
                              f"show-coords -b -r -T -H {compare_prefix}.delta > {compare_prefix}.coords",
                              "awk '{print $1, $2, $7}' " + f"{compare_prefix}.coords > tmp_{compare_prefix}.coords && mv tmp_{compare_prefix}.coords {compare_prefix}.coords",
                              f"show-snps -T -C -H {compare_prefix}.delta > tmp_{compare_prefix}.snps && mv tmp_{compare_prefix}.snps {compare_prefix}.snps",
