@@ -36,14 +36,24 @@ rule mummer4_profiler_exec:
             exit 1
         fi
 
-        # Drop results from any previous run so the lists below reflect this run only
-        rm -f "$output_dir"/*.coords "$output_dir"/*.snps
-        
-        # Parallel execution of MUMmer4 commands from the script list 
-        module load parallel    
+        # Drop results from any previous run so the lists below reflect this run only.
+        # find walks the directory itself instead of expanding a glob into argv,
+        # so this stays under ARG_MAX no matter how many genomes were aligned.
+        find "$output_dir" -maxdepth 1 -type f -name '*.coords' -delete
+        find "$output_dir" -maxdepth 1 -type f -name '*.snps' -delete
+
+        # Parallel execution of MUMmer4 commands from the script list
+        module load parallel
         parallel --silent --jobs {threads} bash :::: {input.script_list}
-        
-        # Generate the coords_list and snps_list files as snakemake output checkpoints
-        ls $output_dir/*.coords > $coords_list_path
-        ls $output_dir/*.snps > $snps_list_path
+
+        # Generate the coords_list and snps_list files as snakemake output checkpoints.
+        # Sorted so both lists share the same order; LC_ALL=C keeps that order locale-independent.
+        find "$output_dir" -maxdepth 1 -type f -name '*.coords' | LC_ALL=C sort > "$coords_list_path"
+        find "$output_dir" -maxdepth 1 -type f -name '*.snps'   | LC_ALL=C sort > "$snps_list_path"
+
+        # find exits 0 on zero matches (ls did not), so check the lists explicitly
+        if [ ! -s "$coords_list_path" ] || [ ! -s "$snps_list_path" ]; then
+            echo "ERROR: no MUMmer4 .coords/.snps files found in $output_dir after execution." >&2
+            exit 1
+        fi
         """

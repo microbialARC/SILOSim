@@ -58,6 +58,10 @@ def validate_profiler(args):
         print("Conda environment path not provided, using default path: <OUTPUT>/conda_envs_<YYYY_MM_DD_HHMMSS>")
         args.conda_prefix = os.path.abspath(f"{args.output}/conda_envs_{args.prefix}")
 
+    # Check species
+    if not args.species:
+        args.species = "None"
+    
     # Check whether local_query_dir is provided
     if args.local_query_dir:
         # args.whatsgnu_db_path and args.top_genomes will be automatically assigned to None if local_query_dir is provided
@@ -100,6 +104,10 @@ def validate_profiler(args):
         # If args.local_query_dir is not provided, check args.whatsgnu_db_path and args.top_genomes
         # And assign "None" to args.local_query_dir
         args.local_query_dir = "None"
+        # Check species
+        # If local query not prodived, species must be specified
+        if args.species == "None":
+            raise ValidationError("Species must be specified when local query directory is not provided.")
         # Only check whatsgnu_db_path and top_genomes when local_query_dir is not provided
         # Check whatsgnu_db_path
         if not args.whatsgnu_db_path:
