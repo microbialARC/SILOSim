@@ -9,6 +9,7 @@ rule profiler:
     params:
         snp_dir = os.path.join(config["output"], "mummer4","output"),
         cov_cutoff = config["cov_cutoff"],
+        min_ctg_len = config["min_ctg_len"],
         output_dir = os.path.join(config["output"], "profiler"),
         genome_name = genome_name,
     threads:

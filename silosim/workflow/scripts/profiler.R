@@ -17,6 +17,7 @@ suppressMessages(library(ggExtra))
 # Input from arguments ----
 # Command-line Rscript tool. Accepts these flags when run standalone:
 #   --input_genome <path>   : reference assembly (FASTA; .fasta/.fna). Required.
+#   --min_ctg_len <int>       : minimum contig length in bp. Contigs shorter than this are excluded from the concatenated sequence used for profiling (optional; defaults to 1000).
 #   --gff <path>            : annotation file (GFF/GFF3). Required.
 #   --snp <dir>             : directory with SNP/coord outputs (expects *.snps and *.coords from MUMmer). Required.
 #   --cpus <int>            : number of CPU cores to use (optional; defaults to detectCores()).
@@ -37,6 +38,8 @@ suppressMessages(library(ggExtra))
 #for (i in seq_along(args)) {
 #  if (args[i] == "--input_genome") {
 #    input_genome_path <- args[i + 1]
+#  } else if (args[i] == "--min_ctg_len") {
+#    min_ctg_len <- as.integer(args[i + 1])
 #  } else if (args[i] == "--gff") {
 #    gff_path <- args[i + 1]
 #  }else if (args[i] == "--snp") {
@@ -51,6 +54,8 @@ suppressMessages(library(ggExtra))
 # Directly get the input from snakemake when run inside the pipeline
 # Path to the input genome assembly file
 input_genome_path <- snakemake@input[["fna_path"]]
+# Minimum contig length for concatenation
+min_ctg_len <- as.integer(snakemake@params[["min_ctg_len"]])
 # Path to the gff file of the input genome assembly
 gff_path <- snakemake@input[["gff3_path"]]
 # Path to directory where the output files will be saved
@@ -71,6 +76,14 @@ if (is.null(input_genome_path)) {
   stop("Missing required argument: --input_genome")
 }
 
+if (length(min_ctg_len) == 0) {
+  stop("Missing required argument: --min_ctg_len")
+}
+
+if (length(cov_cutoff) == 0) {
+  stop("Missing required argument: --cov_cutoff")
+}
+
 if (is.null(gff_path)) {
   stop("Missing required argument: --gff")
 }
@@ -85,6 +98,8 @@ if (is.null(output_dir)) {
 
 cat("\n")
 cat("Input genome:", input_genome_path, "\n")
+cat("Minimum contig length:", min_ctg_len, "\n")
+cat("Coverage cutoff:", cov_cutoff, "\n")
 cat("GFF file:", gff_path, "\n")
 cat("SNP directory:", snp_dir, "\n")
 cat("Output Directory:", output_dir, "\n")
@@ -96,10 +111,26 @@ cat("\n")
 
 concat_genome <- function(input_genome_name,
                           input_genome_path,
+                          min_ctg_len,
                           output_dir){
-  
+
   input_genome_fasta <- readDNAStringSet(input_genome_path)
-  
+  # Check the max contig length against the minimum contig length
+  if(max(width(input_genome_fasta)) < min_ctg_len){
+    stop("The maximum contig length is smaller than the minimum contig length")
+  }
+  # Proceed with filter
+  pass_ctg_idx <- which(width(input_genome_fasta) >= min_ctg_len)
+  fail_ctg_idx <- which(width(input_genome_fasta) < min_ctg_len)
+  total_len_pass_ctgs <- sum(width(input_genome_fasta)[pass_ctg_idx])
+  total_len_fail_ctgs <- sum(width(input_genome_fasta)[fail_ctg_idx])
+  input_genome_fasta <- input_genome_fasta[pass_ctg_idx]
+
+  message("Total number of contigs remaining after filtering: ", length(pass_ctg_idx))
+  message("Total number of contigs failing the filter: ", length(fail_ctg_idx))
+  message("Total length of passing contigs: ", total_len_pass_ctgs)
+  message("Total length of failing contigs: ", total_len_fail_ctgs)
+
   if(length(input_genome_fasta) > 1){
 
     # nucmer only takes the first word, separated by space, of the fasta header as the contig name,

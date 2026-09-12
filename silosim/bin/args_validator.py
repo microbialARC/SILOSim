@@ -52,6 +52,15 @@ def validate_profiler(args):
         print("Warning: cov_cutoff must be between 0 and 1 for reliable profiling.\n"
         "Using default cutoff 0.7.")
         args.cov_cutoff = 0.7
+
+    # Check min_ctg_len
+    if not args.min_ctg_len:
+        print("min_ctg_len not provided, using default 1000")
+        args.min_ctg_len = 1000
+    elif args.min_ctg_len <= 0:
+        print("Warning: min_ctg_len must be a positive integer for reliable profiling.\n"
+        "Using default value 1000.")
+        args.min_ctg_len = 1000
     
     # Check conda prefix
     if not args.conda_prefix:

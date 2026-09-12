@@ -54,6 +54,15 @@ The pipeline will use these local genomes for profiling."""
     )
 
     profiler_parser.add_argument(
+        "--min_ctg_len",
+        type=int,
+        required=False,
+        default=1000,
+        help="""Minimum contig length in bp. Contigs shorter than this are excluded 
+from the concatenated sequence used for profiling (default: 1000)."""
+    )
+
+    profiler_parser.add_argument(
         "--cov_cutoff",
         type=float,
         default=0.7,

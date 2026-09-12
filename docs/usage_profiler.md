@@ -23,6 +23,9 @@ usage:  profiler [-h] --input_genome INPUT_GENOME [--output OUTPUT] --species {s
                         Path to the local query directory containing genome assemblies in FASTA format.If provided, the pipeline will use these local genomes for profiling instead of downloading them from NCBI.The WhatsGNU-based approach to fetch top genomes will be skipped if this option is provided.
   --top_genomes TOP_GENOMES
                         Number of initial top genomes for profiling before applying the ANI exclusion threshold (default: 1000).
+  --min_ctg_len MIN_CTG_LEN
+                        Minimum contig length in bp. Contigs shorter than this are excluded 
+                        from the concatenated sequence used for profiling (default: 1000).
   --cov_cutoff COV_CUTOFF
                         Coverage cutoff for MGE inference.
                         Genomic regions with coverage above this cutoff will be inferred as MGEs.
@@ -82,20 +85,23 @@ usage:  profiler [-h] --input_genome INPUT_GENOME [--output OUTPUT] --species {s
 6. **WhatsGNU Database Path(--whatsgnu_db_path):**
 
     Path to an existing WhatsGNU database. If not provided, the database will be downloaded to `<OUTPUT>/whatsgnu/db`.
-7. **Coverage Cutoff(--cov_cutoff):**
+7. **Minimum Contig Length(--min_ctg_len):**
+
+    Minimum contig length in bp. Contigs shorter than this are excluded from the concatenated sequence used for profiling (default: 1000).
+8. **Coverage Cutoff(--cov_cutoff):**
 
     Coverage cutoff for MGE inference. Genomic regions with coverage above this cutoff will be inferred as MGEs.
     Default is 0.7, which means genomic regions with coverage above 70% will be inferred as MGEs.
-8. **Threads(--threads / -t):**
+9. **Threads(--threads / -t):**
 
     Number of threads to use (default is 1). It is highly recommended to increase the thread count using this option to improve performance, regardless of dataset size.
-9. **Prefix(--prefix):**
+10. **Prefix(--prefix):**
 
     Prefix for config file, output files, and analysis naming. If not provided, defaults to a timestamp in the format `YYYY_MM_DD_HHMMSS`.
-10. **Conda Prefix(--conda_prefix):**
+11. **Conda Prefix(--conda_prefix):**
 
     Directory for conda environments needed for this analysis. If not provided, defaults to `<OUTPUT>/conda_envs_<YYYY_MM_DD_HHMMSS>`.
-11. **Force Execution(--force):**
+12. **Force Execution(--force):**
 
     Bypass system compatibility checks (operating system and available RAM) and force execution of the pipeline. This may cause instability or failures.  
 
