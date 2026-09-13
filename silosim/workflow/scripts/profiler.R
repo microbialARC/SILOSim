@@ -1117,6 +1117,7 @@ profiler <- function(input_genome_path,
     cat("new_pos Not Found. Use helper function to generate new_pos","\n")
     new_pos <- concat_genome(input_genome_name = input_genome_name,
                              input_genome_path = input_genome_path,
+                             min_ctg_len = min_ctg_len,
                              output_dir = output_dir)
     
     cat("Finished generating new_pos","\n")
