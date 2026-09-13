@@ -289,6 +289,10 @@ get_snps_sum <- function(input_genome_name,
                                                                            
                                                                            row_ctg <- snps_entry$V5[row_idx]
                                                                            
+                                                                           # Check whether this contig still exists in the ctg_pos_df
+                                                                           if(!(row_ctg %in% ctg_pos_df$ctg)){
+                                                                             return(NULL)
+                                                                           }
                                                                            # V1: SNP position in the reference.
                                                                            # V2: Character in the reference.
                                                                            # V3: Character in the query.
