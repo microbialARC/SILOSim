@@ -11,6 +11,7 @@ def profiler_config(args):
         'local_query_dir': args.local_query_dir,
         'top_genomes': args.top_genomes,
         'min_ctg_len': args.min_ctg_len,
+        'min_mge_len': args.min_mge_len,
         'cov_cutoff': args.cov_cutoff,
         'ani_threshold': args.ani_threshold,
         'bakta_db_type': args.bakta_db_type,

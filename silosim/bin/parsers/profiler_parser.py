@@ -59,9 +59,20 @@ The pipeline will use these local genomes for profiling."""
         required=False,
         default=1000,
         help="""Minimum contig length in bp. Contigs shorter than this are excluded 
-from the concatenated sequence used for profiling (default: 1000)."""
+from the concatenated sequence used for profiling.
+Default is 1000."""
     )
 
+    profiler_parser.add_argument(
+            "--min_mge_len",
+            type=int,
+            required=False,
+            default=100,
+            help="""Minimum length in bp of a genomic region to be considered an MGE.
+Regions shorter than this threshold are excluded from the MGE analysis.
+Default is 100."""
+        )
+    
     profiler_parser.add_argument(
         "--cov_cutoff",
         type=float,

@@ -53,6 +53,15 @@ def validate_profiler(args):
         "Using default cutoff 0.7.")
         args.cov_cutoff = 0.7
 
+    # Check min_mge_len
+    if not args.min_mge_len:
+        print("min_mge_len not provided, using default 100")
+        args.min_mge_len = 100
+    elif args.min_mge_len <= 0:
+        print("Warning: min_mge_len must be a positive integer for reliable profiling.\n"
+        "Using default value 100.")
+        args.min_mge_len = 100
+    
     # Check min_ctg_len
     if not args.min_ctg_len:
         print("min_ctg_len not provided, using default 1000")

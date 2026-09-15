@@ -25,7 +25,12 @@ usage:  profiler [-h] --input_genome INPUT_GENOME [--output OUTPUT] --species {s
                         Number of initial top genomes for profiling before applying the ANI exclusion threshold (default: 1000).
   --min_ctg_len MIN_CTG_LEN
                         Minimum contig length in bp. Contigs shorter than this are excluded 
-                        from the concatenated sequence used for profiling (default: 1000).
+                        from the concatenated sequence used for profiling. 
+                        Default is 1000.
+  --min_mge_len MIN_MGE_LEN
+                        Minimum length in bp of a genomic region to be considered an MGE.
+                        Regions shorter than this threshold are excluded from the MGE analysis.
+                        Default is 100.
   --cov_cutoff COV_CUTOFF
                         Coverage cutoff for MGE inference.
                         Genomic regions with coverage above this cutoff will be inferred as MGEs.
@@ -88,20 +93,24 @@ usage:  profiler [-h] --input_genome INPUT_GENOME [--output OUTPUT] --species {s
 7. **Minimum Contig Length(--min_ctg_len):**
 
     Minimum contig length in bp. Contigs shorter than this are excluded from the concatenated sequence used for profiling (default: 1000).
-8. **Coverage Cutoff(--cov_cutoff):**
+8. **Minimum MGE Length(--min_mge_len):**
+
+    Minimum length in bp of a genomic region to be considered an MGE.
+    Regions shorter than this threshold are excluded from the MGE analysis (default: 100).
+9. **Coverage Cutoff(--cov_cutoff):**
 
     Coverage cutoff for MGE inference. Genomic regions with coverage above this cutoff will be inferred as MGEs.
     Default is 0.7, which means genomic regions with coverage above 70% will be inferred as MGEs.
-9. **Threads(--threads / -t):**
+10. **Threads(--threads / -t):**
 
     Number of threads to use (default is 1). It is highly recommended to increase the thread count using this option to improve performance, regardless of dataset size.
-10. **Prefix(--prefix):**
+11. **Prefix(--prefix):**
 
     Prefix for config file, output files, and analysis naming. If not provided, defaults to a timestamp in the format `YYYY_MM_DD_HHMMSS`.
-11. **Conda Prefix(--conda_prefix):**
+12. **Conda Prefix(--conda_prefix):**
 
     Directory for conda environments needed for this analysis. If not provided, defaults to `<OUTPUT>/conda_envs_<YYYY_MM_DD_HHMMSS>`.
-12. **Force Execution(--force):**
+13. **Force Execution(--force):**
 
     Bypass system compatibility checks (operating system and available RAM) and force execution of the pipeline. This may cause instability or failures.  
 

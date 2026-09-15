@@ -88,6 +88,8 @@ suppressMessages(library(IRanges))
 input_genome_path <- snakemake@input[["fna_path"]]
 # Minimum contig length for concatenation
 min_ctg_len <- as.integer(snakemake@params[["min_ctg_len"]])
+# Minimum length (bp) of a genomic region to be considered an MGE
+min_mge_size <- as.integer(snakemake@params[["min_mge_len"]])
 # Path to the gff file of the input genome assembly
 gff_path <- snakemake@input[["gff3_path"]]
 # Path to directory where the output files will be saved
@@ -130,7 +132,7 @@ message("")
 message("Input genome: ", input_genome_path)
 message("Minimum contig length: ", min_ctg_len)
 message("Coverage cutoff: ", cov_cutoff)
-message("Minimum MGE size: ", min_mge_size)
+message("Minimum MGE length: ", min_mge_size)
 message("GFF file: ", gff_path)
 message("SNP directory: ", snp_dir)
 message("Output directory: ", output_dir)
