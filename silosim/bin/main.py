@@ -2,7 +2,7 @@
 """SILOSim Main Entry
 This script creates the configuration files and executes the Snakemake workflow.
 """
-VERSION = "0.1.1-beta"
+VERSION = "0.1.2-beta"
 
 # Import standard libraries and custom modules
 import argparse
