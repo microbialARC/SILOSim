@@ -221,14 +221,22 @@ read_gff_cds <- function(gff_path) {
   if (length(gff_lines) == 0) stop("No annotation records found in ", gff_path)
   
   # quote = "" because GFF3 attribute values legitimately contain quote marks.
-  gff_table <- data.table::fread(text = gff_lines, sep = "\t", header = FALSE,
-                                 quote = "", showProgress = FALSE)
+  gff_table <- data.table::fread(text = gff_lines,
+                                 sep = "\t",
+                                 header = FALSE,
+                                 quote = "",
+                                 showProgress = FALSE)
+  
   gff_table <- gff_table[gff_table$V3 == "CDS", ]
   
   if (nrow(gff_table) == 0) {
     warning("No CDS features in ", gff_path, "; every bin will be intergenic.")
-    return(data.frame(contig = character(0), start = integer(0), end = integer(0),
-                      gene_name = character(0), locus_tag = character(0),
+    return(data.frame(contig = character(0),
+                      start = integer(0),
+                      end = integer(0),
+                      strand = character(0),
+                      gene_name = character(0),
+                      locus_tag = character(0),
                       stringsAsFactors = FALSE))
   }
   
@@ -246,6 +254,7 @@ read_gff_cds <- function(gff_path) {
     contig = as.character(gff_table$V1),
     start = as.integer(gff_table$V4),
     end = as.integer(gff_table$V5),
+    strand = as.character(gff_table$V7),
     gene_name = gene_names,
     locus_tag = locus_tags,
     stringsAsFactors = FALSE
@@ -353,8 +362,12 @@ get_position_coverage <- function(input_genome_name,
     coords_path <- coords_files[file_idx]
     if (file.size(coords_path) == 0) return(NULL)
     
-    coords_table <- data.table::fread(coords_path, header = FALSE,
-                                      select = 1:3, showProgress = FALSE)
+    coords_table <- data.table::fread(coords_path,
+                                      header = FALSE,
+                                      sep = " ",
+                                      select = 1:3,
+                                      showProgress = FALSE)
+    
     if (nrow(coords_table) == 0) return(NULL)
     
     data.table::data.table(
@@ -484,8 +497,12 @@ get_snps_sum <- function(input_genome_name,
     
     if (!file.exists(snps_path) || file.size(snps_path) == 0) return(NULL)
     
-    snps_table <- data.table::fread(snps_path, header = FALSE, sep = " ",
-                                colClasses = "character", showProgress = FALSE)
+    snps_table <- data.table::fread(snps_path,
+                                    header = FALSE,
+                                    sep = " ",
+                                    colClasses = "character",
+                                    showProgress = FALSE)
+    
     if (nrow(snps_table) == 0) return(NULL)
     if (ncol(snps_table) != 6L) {
       stop(snps_path, " has ", ncol(snps_table), " columns. Expected 6 ")
@@ -565,6 +582,8 @@ get_chr_bins <- function(input_genome_name,
   coding_bins <- data.frame(
     start = cds_table$new_start,
     end = cds_table$new_end,
+    # Strand sets the arrow direction in the entropy barcoding gene track.
+    strand = cds_table$strand,
     gene = cds_table$gene_name,
     locus_tag = cds_table$locus_tag,
     original_contig = cds_table$contig,
@@ -593,6 +612,8 @@ get_chr_bins <- function(input_genome_name,
     data.frame(
       start = IRanges::start(uncovered_ranges),
       end = IRanges::end(uncovered_ranges),
+      # "." is the GFF3 code for an unstranded feature.
+      strand = ".",
       gene = "non-cds",
       locus_tag = "non-cds",
       original_contig = contig_positions$ctg[contig_row],
@@ -608,8 +629,8 @@ get_chr_bins <- function(input_genome_name,
   chr_bins$bin_index <- seq_len(nrow(chr_bins))
   chr_bins$length <- chr_bins$end - chr_bins$start + 1L
   
-  chr_bins <- chr_bins[, c("bin_index", "start", "end", "length",
-                           "gene", "locus_tag", "original_contig")]
+  chr_bins <- chr_bins[, c("bin_index","start", "end", "length",
+                           "gene", "locus_tag", "original_contig", "strand")]
   rownames(chr_bins) <- NULL
   
   message("Built ", nrow(chr_bins), " bins (",

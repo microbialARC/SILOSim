@@ -77,7 +77,8 @@ def get_mummer4_commands(reference_genome_name, reference_genome_path, topgenome
                              # This avoids abnormal surge in RAM usage which will cause OOM inevitably
                              f"nucmer --maxmatch -l 50 {reference_genome_path} {topgenome_path} -p {compare_prefix}",
                              f"show-coords -b -r -T -H {compare_prefix}.delta > {compare_prefix}.coords",
-                             "awk '{print $1, $2, $7}' " + f"{compare_prefix}.coords > tmp_{compare_prefix}.coords && mv tmp_{compare_prefix}.coords {compare_prefix}.coords",
+                             # Add the column 8 ([TAGS] The reference FastA ID and the query FastA ID) so that we can track the reference sites as well
+                             "awk '{print $1, $2, $7, $8}' " + f"{compare_prefix}.coords > tmp_{compare_prefix}.coords && mv tmp_{compare_prefix}.coords {compare_prefix}.coords",
                              f"show-snps -T -C -H {compare_prefix}.delta > tmp_{compare_prefix}.snps && mv tmp_{compare_prefix}.snps {compare_prefix}.snps",
                              # Add the column 4 ([P2] SNP position in the query) so that we can track the query sites as well
                              "awk '$5 >= 20 {print $1, $2, $3, $4, $5, $9}' " + f"{compare_prefix}.snps > tmp_{compare_prefix}.snps && mv tmp_{compare_prefix}.snps {compare_prefix}.snps",
