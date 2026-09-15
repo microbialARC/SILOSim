@@ -5,11 +5,38 @@
 # 2. nucmer to generate the delta file
 # 3. show-coords to get the coverage information to get the denominator for calculating entropy
 # 4. awk to extract relevant columns from the coords file
+
+    # show-coords output columns:
+    # [S1]    [E1]    [S2]    [E2]    [LEN 1] [LEN 2] [TAGS]
+    # [S1] Start of the alignment region in the reference sequence.
+    # [E1] End of the alignment region in the reference sequence.
+    # [S2] Start of the alignment region in the query sequence.
+    # [E2] End of the alignment region in the query sequence.
+    # [LEN 1] Length of the alignment region in the reference sequence,
+    # measured in nucleotides.
+    # [LEN 2] Length of the alignment region in the query sequence, measured
+    # in nucleotides.
+    # [TAGS] The reference FastA ID and the query FastA ID.
+
     # 1st column: [S1] Start of the alignment region in the reference sequence.
     # 2nd column: [E1] End of the alignment region in the reference sequence.
     # 7th column: [TAG] The reference FastA ID of the alignment.
 # 5. show-snps to get the coordinates of snps
 # 6. awk to extract relevant columns from the snps file
+    # show-snps output columns:
+    # [P1]    [SUB]   [SUB]   [P2]    [BUFF]  [DIST]  [FRM]   [TAGS]
+    # [P1]  SNP position in the reference.
+    # [SUB] Character in the reference.
+    # [SUB] Character in the query.
+    # [P2] SNP position in the query.
+    # [BUFF] Distance from this SNP to the nearest mismatch (end of 
+    # alignment, indel, SNP, etc) in the same alignment.
+    # [DIST] Distance from this SNP to the nearest sequence end.
+    # [FRM] Reading frame for the reference sequence and the
+    # reading frame for the query sequence respectively. Simply
+    # 'forward'  1, or 'reverse' -1 for nucmer data.
+    # [TAGS] The reference FastA ID and the query FastA ID.
+    
     # 1st column: [P1] SNP position in the reference.
     # 2nd column: [SUB] Character in the reference.
     # 3rd column: [SUB] Character in the query.
@@ -52,7 +79,8 @@ def get_mummer4_commands(reference_genome_name, reference_genome_path, topgenome
                              f"show-coords -b -r -T -H {compare_prefix}.delta > {compare_prefix}.coords",
                              "awk '{print $1, $2, $7}' " + f"{compare_prefix}.coords > tmp_{compare_prefix}.coords && mv tmp_{compare_prefix}.coords {compare_prefix}.coords",
                              f"show-snps -T -C -H {compare_prefix}.delta > tmp_{compare_prefix}.snps && mv tmp_{compare_prefix}.snps {compare_prefix}.snps",
-                             "awk '$5 >= 20 {print $1, $2, $3, $5, $9}' " + f"{compare_prefix}.snps > tmp_{compare_prefix}.snps && mv tmp_{compare_prefix}.snps {compare_prefix}.snps",
+                             # Add the column 4 ([P2] SNP position in the query) so that we can track the query sites as well
+                             "awk '$5 >= 20 {print $1, $2, $3, $4, $5, $9}' " + f"{compare_prefix}.snps > tmp_{compare_prefix}.snps && mv tmp_{compare_prefix}.snps {compare_prefix}.snps",
                              f"rm {compare_prefix}.delta"
                              ]
             # Write the command to a script file

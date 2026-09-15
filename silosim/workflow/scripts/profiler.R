@@ -484,10 +484,14 @@ get_snps_sum <- function(input_genome_name,
     
     if (!file.exists(snps_path) || file.size(snps_path) == 0) return(NULL)
     
-    snps_table <- data.table::fread(snps_path, header = FALSE, showProgress = FALSE)
-    if (nrow(snps_table) == 0 || ncol(snps_table) < 5) return(NULL)
+    snps_table <- data.table::fread(snps_path, header = FALSE, sep = " ",
+                                colClasses = "character", showProgress = FALSE)
+    if (nrow(snps_table) == 0) return(NULL)
+    if (ncol(snps_table) != 6L) {
+      stop(snps_path, " has ", ncol(snps_table), " columns. Expected 6 ")
+    }
     
-    contig_offsets <- contig_offset_by_name[as.character(snps_table$V5)]
+    contig_offsets <- contig_offset_by_name[as.character(snps_table$V6)]
     
     # Insertions and deletions are marked "." on one side and are out of scope
     # for a per-site substitution entropy.
@@ -1169,12 +1173,6 @@ derive_genome_name <- function(input_genome_path) {
   }
 }
 
-## Add the file.path to the files
-
-output_path <- function(suffix) {
-  file.path(output_dir, paste0(input_genome_name, suffix))
-}
-
 profiler <- function(input_genome_path,
                      output_dir,
                      gff_path,
@@ -1189,6 +1187,12 @@ profiler <- function(input_genome_path,
   
   input_genome_name <- derive_genome_name(input_genome_path)
   
+  
+  ## Add the file.path to the files
+  ## This helper function is inside the main profiler function so that it can access the input_genome_name variable
+  output_path <- function(suffix) {
+    file.path(output_dir, paste0(input_genome_name, suffix))
+  }
   
   ## Step 1: concatenate ----
   if (file.exists(output_path("_new_pos.RDS"))) {
