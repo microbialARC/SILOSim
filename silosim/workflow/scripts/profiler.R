@@ -1185,12 +1185,20 @@ get_visual <- function(input_genome_name,
 
 ## Derive the short genome name used in every output filename ----
 derive_genome_name <- function(input_genome_path) {
-  if (grepl("GCA_", input_genome_path)) {
-    # GenBank assemblies: keep just the accession, e.g. GCA_000013425.1
-    paste0("GCA_", strsplit(gsub("\\.fna", "", basename(input_genome_path)),
-                            split = "_")[[1]][2])
+  # Strip a letters-only extension (.fna, .fa, .fasta, ...) and an optional .gz;
+  # numeric suffixes like the accession version (.1) are never stripped
+  extension_pattern <- "\\.[A-Za-z]+(\\.gz)?$"
+  genome_file <- basename(input_genome_path)
+  if (grepl("GCA_|GCF_", input_genome_path)) {
+    # NCBI assemblies (GCA_ = GenBank, GCF_ = RefSeq): keep just the accession,
+    # e.g. GCA_000013425.1 or GCF_000013425.1
+    genome_stem <- sub(extension_pattern, "", genome_file)
+    stem_parts <- strsplit(genome_stem, split = "_")[[1]]
+    accession_prefix <- stem_parts[1]
+    accession_number <- stem_parts[2]
+    paste0(accession_prefix, "_", accession_number)
   } else {
-    gsub("\\.fna$|\\.fasta$", "", basename(input_genome_path))
+    sub(extension_pattern, "", genome_file)
   }
 }
 

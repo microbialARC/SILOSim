@@ -1,11 +1,28 @@
 import os
 import sys
+import re
 
 BASE_PATH = os.path.dirname(os.path.abspath(workflow.snakefile))
+# Python port of derive_genome_name() in profiler.R; keep the two in sync
+def derive_genome_name(input_genome_path):
+    # Strip a letters-only extension (.fna, .fa, .fasta, ...) and an optional .gz;
+    # numeric suffixes like the accession version (.1) are never stripped
+    extension_pattern = r"\.[A-Za-z]+(\.gz)?$"
+    genome_file = os.path.basename(input_genome_path)
+    if re.search(r"GCA_|GCF_", input_genome_path):
+        # NCBI assemblies (GCA_ = GenBank, GCF_ = RefSeq): keep just the accession,
+        # e.g. GCA_000013425.1 or GCF_000013425.1
+        genome_stem = re.sub(extension_pattern, "", genome_file)
+        stem_parts = genome_stem.split("_")
+        accession_prefix = stem_parts[0]
+        accession_number = stem_parts[1]
+        return f"{accession_prefix}_{accession_number}"
+    else:
+        return re.sub(extension_pattern, "", genome_file)
 
 # Get the genome name from the input genome path
 input_genome_path = config["input_genome"]
-genome_name = os.path.splitext(os.path.basename(input_genome_path))[0]
+genome_name = derive_genome_name(input_genome_path)
 
 rule all:
     input:
