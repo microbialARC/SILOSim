@@ -474,6 +474,7 @@ print()
 ################# Perform Analysis #################
 # Set the seed
 random.seed(rseed)
+numpy.random.seed(rseed)
 
 alpha=["A","T","C","G"]
 transition={}

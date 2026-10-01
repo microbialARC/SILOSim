@@ -138,6 +138,10 @@ def validate_profiler(args):
                 args.whatsgnu_db_path = "None"
             else:
                 print(f"WhatsGNU database file found at: {args.whatsgnu_db_path}")
+        # whatsgnu_profiler.smk downloads databases for sau, sepi, cdiff and kp only
+        # This is ad-hoc. Will be solved when the b. pertussis database is added to the whatsGNU repo
+        if args.species == "bp" and args.whatsgnu_db_path == "None":
+            raise ValidationError("No WhatsGNU database is downloaded automatically for bp (Bordetella pertussis). Provide one with --whatsgnu_db_path, or use --local_query_dir.")
         # Check top_genomes
         if args.top_genomes < 100:
             raise ValidationError("top_genomes must be at least 100 for reliable profiling")
@@ -171,11 +175,12 @@ def validate_simulator(args):
         args.prefix = time.strftime("%Y_%m_%d_%H%M%S")
     
     # Check seed
-    if not args.seed:
+    if args.seed is None:
         print("Seed not provided, using current date in the format of YYYYMMDD as seed")
         args.seed = int(pd.Timestamp.now().strftime("%Y%m%d"))
-    elif args.seed < 0 or not isinstance(args.seed, int):
-        raise ValidationError("Seed must be a non-negative integer")
+    elif not 0 <= args.seed <= 2**32 - 1:
+        # numpy.random.seed() in simulator_simulation.py accepts 0 to 2**32 - 1
+        raise ValidationError("Seed must be an integer between 0 and 4294967295")
     
     # Check output directory
     if not args.output:

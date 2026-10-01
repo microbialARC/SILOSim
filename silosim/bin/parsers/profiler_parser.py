@@ -27,14 +27,13 @@ def add_profiler_parser(subparsers):
         type=str,
         required=False,
         default=None,
-        choices=["sau", "sepi", "cdiff", "kp", "bp"],
+        choices=["sau", "sepi", "cdiff", "kp"],
         help="""Bacteria species.
-Available options: [sau, sepi, cdiff, kp, bp]
+Available options: [sau, sepi, cdiff, kp]
 sau: Staphylococcus aureus
 sepi: Staphylococcus epidermidis
-cdiff: Clostridium difficile
-kp: Klebsiella pneumoniae
-bp: Bordetella pertussis"""
+cdiff: Clostridioides difficile
+kp: Klebsiella pneumoniae"""
     )
 
     profiler_parser.add_argument(
