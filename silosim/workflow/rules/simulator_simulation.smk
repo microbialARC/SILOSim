@@ -16,7 +16,7 @@ rule simulator_simulation:
         recombination = os.path.join(config["output"], "simulator", "output", "recombination.csv"),
         simulated_genomes = os.path.join(config["output"], "simulator", "output", "simulated_genomes.fasta"),
         snp_matrix = os.path.join(config["output"], "simulator", "output", "snp_matrix.txt"),
-        chromosome_bins = os.path.join(config["output"], "simulator", "intermediate", "chromosome_bins.csv"),
+        chromosome_bins = os.path.join(config["output"], "simulator", "intermediate", "chromosome_bins.csv") if config["use_gain_loss"] else [],
         nu = os.path.join(config["output"], "simulator", "intermediate", "nu.txt"),
         rm = os.path.join(config["output"], "simulator", "intermediate", "rm.txt")
     params:

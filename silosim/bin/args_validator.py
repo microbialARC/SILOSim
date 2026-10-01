@@ -79,7 +79,6 @@ def validate_profiler(args):
     # Check species
     if not args.species:
         args.species = "None"
-    
     # Check whether local_query_dir is provided
     if args.local_query_dir:
         # args.whatsgnu_db_path and args.top_genomes will be automatically assigned to None if local_query_dir is provided
@@ -171,11 +170,6 @@ def validate_simulator(args):
         print("Prefix not provided, using default prefix: current timestamp in the format of YYYY_MM_DD_HHMMSS")
         args.prefix = time.strftime("%Y_%m_%d_%H%M%S")
     
-    # Check conda prefix
-    if not args.conda_prefix:
-        print("Conda environment path not provided, using default path: <OUTPUT>/conda_envs_<YYYY_MM_DD_HHMMSS>")
-        args.conda_prefix = os.path.abspath(f"{args.output}/conda_envs_{args.prefix}")
-    
     # Check seed
     if not args.seed:
         print("Seed not provided, using current date in the format of YYYYMMDD as seed")
@@ -191,6 +185,12 @@ def validate_simulator(args):
         print(f"Output directory {args.output} does not exist, creating it.")
         os.makedirs(args.output)
         args.output = os.path.abspath(args.output)
+    
+    # Check conda prefix
+    # This needs to come after the output directory, which the default conda prefix is placed in
+    if not args.conda_prefix:
+        print("Conda environment path not provided, using default path: <OUTPUT>/conda_envs_<YYYY_MM_DD_HHMMSS>")
+        args.conda_prefix = os.path.abspath(f"{args.output}/conda_envs_{args.prefix}")
     
     # Check ancestor_genome
     if not os.path.exists(args.ancestor):
@@ -236,15 +236,13 @@ def validate_simulator(args):
         args.model_parameters = "None"
     elif args.substitution_model == "K2P":
         print("K2P model selected, validating parameter...")
-        if not args.model_parameters:
+        try:
+            kappa = float(args.model_parameters)
+        except (TypeError, ValueError):
             raise ValidationError("K2P model requires transition/transversion ratio(kappa) as parameter. The parameter should be provided as a single float value greater than 0.")
-        elif isinstance(float(args.model_parameters), float) or isinstance(int(args.model_parameters), int):
-            if args.model_parameters <= 0:
-                raise ValidationError("Transition/transversion ratio(kappa) must be a float value greater than 0 for K2P model")
-            else:
-                print(f"K2P model parameter (transition/transversion ratio, kappa) set to {args.model_parameters}")
-        else:
-            raise ValidationError("Transition/transversion ratio must be a float value greater than 0 for K2P model")
+        if kappa <= 0:
+            raise ValidationError("Transition/transversion ratio(kappa) must be a float value greater than 0 for K2P model")
+        print(f"K2P model parameter (transition/transversion ratio, kappa) set to kappa: {kappa}")
     elif args.substitution_model == "K3P":
         print("K3P model selected, validating parameters...")
         if not args.model_parameters:
@@ -284,102 +282,57 @@ def validate_simulator(args):
     if not args.mutation_rate or not isinstance(args.mutation_rate, (int, float)) or args.mutation_rate <= 0:
         raise ValidationError("Mutation rate must be a positive float value")
     
-    # Check if weighted mutation is on
-    if not args.use_weighted_mutation:
-        print("Whether using weighted mutation not provided, using default True")
-        args.use_weighted_mutation = True
-    elif args.use_weighted_mutation not in {True, False}:
-        print("use_weighted_mutation must be either True or False. Using default True")
-        args.use_weighted_mutation = True
-    elif args.use_weighted_mutation:
+    # Check weighted mutation
+    if args.use_weighted_mutation:
         print("Weighted mutation enabled, validating weighted mutation input...")
-        # Check weighted mutation file
-        if not os.path.exists(args.weighted_mutation_file):
-            raise ValidationError(f"Weighted mutation file not found: {args.weighted_mutation_file}")
-    elif args.use_weighted_mutation == False:
+        if not args.weighted_mutation_file or not os.path.exists(args.weighted_mutation_file):
+            raise ValidationError(f"Weighted mutation file not found: {args.weighted_mutation_file}. --weighted_mutation_file is required when --use_weighted_mutation is True")
+    else:
         print("Weighted mutation disabled.")
         args.weighted_mutation_file = "None"
-    
-    # Check if recombination simulation is on
-    if not args.use_recombination:
-        print("Whether using recombination not provided, using default True")
-        args.use_recombination = True
-    elif args.use_recombination not in {True, False}:
-        print("use_recombination must be either True or False. Using default True")
-        args.use_recombination = True
-    elif args.use_recombination:
+
+    # Check recombination
+    if args.use_recombination:
         print("Recombination simulation enabled, validating recombination input...")
-        # Check recombination rate 
-        if not args.recombination_rate or not isinstance(args.recombination_rate, (int, float)) or args.recombination_rate <= 0:
+        if args.recombination_rate is None or args.recombination_rate <= 0:
             raise ValidationError("Recombination rate must be a positive float value. If no recombination simulation is desired, set --use_recombination to False")
-        # Check mean recombination size
-        if not args.mean_recombination_size or not isinstance(args.mean_recombination_size, float) or args.mean_recombination_size <= 0:
+        if args.mean_recombination_size is None or args.mean_recombination_size <= 0:
             raise ValidationError("Mean recombination size must be a positive float value")
-        # Check minimal recombination size
-        if not args.min_recombination_size or not isinstance(args.min_recombination_size, float) or args.min_recombination_size <= 0:
+        if args.min_recombination_size is None or args.min_recombination_size <= 0:
             raise ValidationError("Minimal recombination size must be a positive float value")
         elif args.min_recombination_size >= args.mean_recombination_size:
             raise ValidationError("Minimal recombination size must be smaller than mean recombination size")
-        # Check nu
-        if not args.nu or not isinstance(args.nu, (int, float)) or args.nu <= 0 or args.nu >=1:
+        if args.nu is None or args.nu <= 0 or args.nu >= 1:
             raise ValidationError("Nu must be a positive float value between 0 and 1")
-        else: 
-            print(f"Recombination parameters set to: recombination_rate={args.recombination_rate}, mean_recombination_size={args.mean_recombination_size}, minimal_recombination_size={args.min_recombination_size}, nu={args.nu}")
-    elif args.use_recombination == False:
+        print(f"Recombination parameters set to: recombination_rate={args.recombination_rate}, mean_recombination_size={args.mean_recombination_size}, minimal_recombination_size={args.min_recombination_size}, nu={args.nu}")
+    else:
         print("Recombination simulation disabled.")
-        args.recombination_rate = "None"
-        args.mean_recombination_size = "None"
-        args.min_recombination_size = "None"
-        args.nu = "None"
-    
-    # Check if gene gain/loss simulation is on
-    if not args.use_gain_loss:
-        print("Whether using gene gain/loss not provided, using default True")
-        args.use_gain_loss = True
-    elif args.use_gain_loss not in {True, False}:
-        print("use_gain_loss must be either True or False. Using default True")
-        args.use_gain_loss = True
-    elif args.use_gain_loss == False:
-        print("Gene gain/loss simulation disabled.")
-        args.gain_rate = "None"
-        args.loss_rate = "None"
-        args.bin = "None"
-        args.mge_data = "None"
-        args.position_coverage = "None"
-        args.mge_fasta = "None"
-        args.mge_entropy = "None"
+        # simulator_simulation.py reads these as floats; a rate of 0 produces no recombination events
+        args.recombination_rate = 0.0
+        args.mean_recombination_size = 0.0
+        args.min_recombination_size = 0.0
+        args.nu = 0.0
 
+    # Check gene gain/loss
     if args.use_gain_loss:
         print("Gene gain/loss simulation enabled, validating gene gain/loss input...")
-        # Check gain rate
-        if not args.gain_rate or not isinstance(args.gain_rate, (int, float)) or args.gain_rate < 0:
-            raise ValidationError("Gain rate must be a non-negative float value")
-        # Check loss rate
-        if not args.loss_rate or not isinstance(args.loss_rate, (int, float)) or args.loss_rate < 0:
-            raise ValidationError("Loss rate must be a non-negative float value")
-        # Check chromosome bin file
-        if not os.path.exists(args.bin):
-            raise ValidationError(f"Chromosome bin file not found: {args.bin}")
-        # Check MGE data file
-        if not os.path.exists(args.mge_data):
-            raise ValidationError(f"MGE data file not found: {args.mge_data}")
-        # Check MGE fasta file
-        if not os.path.exists(args.mge_fasta):
-            raise ValidationError(f"MGE fasta file not found: {args.mge_fasta}")
-        # Check MGE entropy file
-        if not os.path.exists(args.mge_entropy):
-            raise ValidationError(f"The directory of MGE entropy file not found: {args.mge_entropy}")
-        # Check position coverage file
-        if not os.path.exists(args.position_coverage):
-            raise ValidationError(f"Position coverage file not found: {args.position_coverage}")
-        else:
-            print(f"Gene gain/loss parameters set to: gain_rate={args.gain_rate}, loss_rate={args.loss_rate}, bin={args.bin}, mge_data={args.mge_data}, mge_fasta={args.mge_fasta}, mge_entropy={args.mge_entropy}, position_coverage={args.position_coverage}")
-        
-    elif args.use_gain_loss == False:
+        # simulator_simulation.py skips all MGE events when either rate is 0, so both must be positive
+        if args.gain_rate is None or args.gain_rate <= 0:
+            raise ValidationError("Gain rate must be a positive float value. If no gene gain/loss simulation is desired, set --use_gain_loss to False")
+        if args.loss_rate is None or args.loss_rate <= 0:
+            raise ValidationError("Loss rate must be a positive float value. If no gene gain/loss simulation is desired, set --use_gain_loss to False")
+        for flag in ("bin", "position_coverage", "mge_data", "mge_fasta", "mge_entropy"):
+            path = getattr(args, flag)
+            if not path or not os.path.exists(path):
+                raise ValidationError(f"--{flag} not found: {path}. It is required when --use_gain_loss is True")
+        print(f"Gene gain/loss parameters set to: gain_rate={args.gain_rate}, loss_rate={args.loss_rate}, bin={args.bin}, mge_data={args.mge_data}, mge_fasta={args.mge_fasta}, mge_entropy={args.mge_entropy}, position_coverage={args.position_coverage}")
+    else:
         print("Gene gain/loss simulation disabled.")
-        args.gain_rate = "None"
-        args.loss_rate = "None"
+        # Rates are read as floats by simulator_simulation.py
+        args.gain_rate = 0.0
+        args.loss_rate = 0.0
         args.bin = "None"
+        args.position_coverage = "None"
+        args.mge_data = "None"
         args.mge_fasta = "None"
         args.mge_entropy = "None"
-        args.position_coverage = "None"

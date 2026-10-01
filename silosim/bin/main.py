@@ -2,7 +2,15 @@
 """SILOSim Main Entry
 This script creates the configuration files and executes the Snakemake workflow.
 """
-VERSION = "0.1.2-beta"
+
+# Version is read from the installed package metadata
+# From now on pyproject.toml is the single source of truth
+from importlib import metadata
+try:
+    VERSION = metadata.version("silosim")
+except metadata.PackageNotFoundError:
+    # If not found, set version to "unknown"
+    VERSION = "unknown"
 
 # Import standard libraries and custom modules
 import argparse
@@ -224,7 +232,11 @@ def main():
     # Build and parse arguments
     parser = build_parser()
     args = parser.parse_args()
-
+    
+    if args.command is None:
+        parser.print_help()
+        return 1
+    
     print(f"SILOSim Mode: {args.command}".center(term_width))
     
     # For profiler, check OS and RAM

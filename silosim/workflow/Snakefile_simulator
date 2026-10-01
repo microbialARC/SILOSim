@@ -12,14 +12,14 @@ rule all:
         # Time-Scale Phylogeny Simulation
         os.path.join(config["output"], "treesim", "simu_tree.nwk"),
         # Intermediate files of Simulator
-        os.path.join(config["output"], "simulator", "intermediate", "chromosome_bins.csv"),
+        os.path.join(config["output"], "simulator", "intermediate", "chromosome_bins.csv") if config["use_gain_loss"] else [],
         os.path.join(config["output"], "simulator", "intermediate", "dichotomies.txt"),
         os.path.join(config["output"], "simulator", "intermediate", "names.txt"),
         os.path.join(config["output"], "simulator", "intermediate", "nu.txt"),
         os.path.join(config["output"], "simulator", "intermediate", "renamed.txt"),
         os.path.join(config["output"], "simulator", "intermediate", "rm.txt"),
         os.path.join(config["output"], "simulator", "intermediate", "roots.txt"),
-        os.path.join(config["output"], "simulator", "intermediate", "weight_mutation.csv"),
+                os.path.join(config["output"], "simulator", "intermediate", "weight_mutation.csv") if config["use_weighted_mutation"] else [],
         # Final output files of Simulator
         os.path.join(config["output"], "simulator", "output", "stats.txt"),
         os.path.join(config["output"], "simulator", "output", "mutations.csv"),

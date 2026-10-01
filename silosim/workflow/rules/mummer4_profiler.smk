@@ -43,7 +43,6 @@ rule mummer4_profiler_exec:
         find "$output_dir" -maxdepth 1 -type f -name '*.snps' -delete
 
         # Parallel execution of MUMmer4 commands from the script list
-        module load parallel
         parallel --silent --jobs {threads} bash :::: {input.script_list}
 
         # Generate the coords_list and snps_list files as snakemake output checkpoints.

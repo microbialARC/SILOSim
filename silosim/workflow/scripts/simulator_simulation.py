@@ -644,11 +644,11 @@ mutator = SequenceMutator(
 )
 
 mgeser = SequenceMGEser(
-	chr_bins=chr_bins,
+	chr_bins=chr_bins if use_mge else None,
 	gain_rate=gain_rate,
 	loss_rate=loss_rate,
-	mge_fasta=mge_fasta,
-	mge_entropy=mge_entropy
+	mge_fasta=mge_fasta if use_mge else None,
+	mge_entropy=mge_entropy if use_mge else None
 )
 
 branch_type = {}
@@ -1076,7 +1076,7 @@ loss_log.to_csv(os.path.join(output_path, "loss.csv"), index=False)
 # Export other logs
 # Export recombination size distribution
 with open(os.path.join(intermediate_path, "nu.txt"), "w") as h:
-    h.write(f"{sum(nu_sum) / len(nu_sum)}\n")
+    h.write(f"{sum(nu_sum) / len(nu_sum) if nu_sum else 'NA'}\n")
 
 # Read names mapping file
 with open(os.path.join(intermediate_path, "names.txt"), "r") as f:
@@ -1119,8 +1119,8 @@ elif not export_per_event_genomes:
 					h.write(f">{node}\n{sequence[node]}\n")
 
 # Calculate values once
-rm_value = 0.0 if recom_rate == 0 else recom_rate * mean_recomb_size * sum(nu_sum) / len(nu_sum)
-nu_value = "NA" if recom_rate == 0 else sum(nu_sum) / len(nu_sum)
+rm_value = 0.0 if not nu_sum else recom_rate * mean_recomb_size * sum(nu_sum) / len(nu_sum)
+nu_value = "NA" if not nu_sum else sum(nu_sum) / len(nu_sum)
 
 # Export the concatenated chromosome bins
 if mgeser.chr_bins is not None:
@@ -1152,7 +1152,8 @@ snp_dists_cmd = ["snp-dists", "-b", snp_fasta]
 with open(snp_matrix, "w") as snp_dists_output:
 	proc = subprocess.run(snp_dists_cmd, stdout=snp_dists_output, stderr=subprocess.PIPE, text=True)
 if proc.returncode != 0:
-	print(f"Error running snp-dists (exit {proc.returncode}): {proc.stderr.decode().strip()}")
+	print(f"Error running snp-dists (exit {proc.returncode}): {proc.stderr.strip()}")
+	sys.exit(proc.returncode)
 else:
 	print(f"snp-dists completed, output written to {snp_matrix}")
 print("SNP distance matrix calculation completed.")

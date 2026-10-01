@@ -1,7 +1,9 @@
 name: whatsgnu
 channels:
- - bioconda
  - conda-forge
- - defaults
+ - bioconda
+ - nodefaults
 dependencies:
  - whatsgnu =1.5.0
+ - conda-forge::wget=1.25.0
+ - conda-forge::unzip=6.0

@@ -2,7 +2,7 @@ name: evo_simulator
 channels:
   - conda-forge
   - bioconda
-  - defaults
+  - nodefaults
 dependencies:
   - python=3.12
   - numpy=2.1.3
