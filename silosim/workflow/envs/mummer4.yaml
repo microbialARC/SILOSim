@@ -1,10 +1,10 @@
 name: mummer4
 channels:
- - bioconda
  - conda-forge
+ - bioconda
  - nodefaults
 dependencies:
  - mummer4 =4.0.0rc1
- - perl-bioperl =1.7.2
- - bioconda::perl-set-intspan =1.19
- - conda-forge::parallel
+ - perl-bioperl =1.7.8
+ - perl-set-intspan =1.19
+ - parallel

@@ -59,14 +59,33 @@ rule whatsgnu_profiler:
                     gunzip -c {params.output_dir}/whatsgnu/db/whatsgnu_db.gz > {params.output_dir}/whatsgnu/db/Sepi_WhatsGNU_basic.txt
                     db_path="{params.output_dir}/whatsgnu/db/Sepi_WhatsGNU_basic.txt"
                     whatsgnu_mode="basic"
+                elif [ "{params.species}" == "ecoli" ]; then
+                    wget -O {params.output_dir}/whatsgnu/db/whatsgnu_db.tar.gz https://zenodo.org/records/13693568/files/Ecoli_basic.tar.gz?download=1
+                    tar -xvzf {params.output_dir}/whatsgnu/db/whatsgnu_db.tar.gz -C {params.output_dir}/whatsgnu/db
+                    db_path="{params.output_dir}/whatsgnu/db/Ecoli/basic_Ecoli.txt"
+                    whatsgnu_mode="basic"
+                elif [ "{params.species}" == "pa" ]; then
+                    wget -O {params.output_dir}/whatsgnu/db/whatsgnu_db.tar.gz https://zenodo.org/records/13385380/files/PA_basic.tar.gz?download=1
+                    tar -xvzf {params.output_dir}/whatsgnu/db/whatsgnu_db.tar.gz -C {params.output_dir}/whatsgnu/db
+                    db_path="{params.output_dir}/whatsgnu/db/PA/PA_basic_db.txt"
+                    whatsgnu_mode="basic"
+                elif [ "{params.species}" == "mtb" ]; then
+                    # The Dropbox link is a shared folder, which downloads as a zip archive
+                    wget -O {params.output_dir}/whatsgnu/db/whatsgnu_db.zip "https://www.dropbox.com/sh/8nqowtd4fcf7dgs/AAAdXiqcxTsEqfIAyNE9TWwRa?dl=1"
+                    unzip -o {params.output_dir}/whatsgnu/db/whatsgnu_db.zip TB_Ortholog_6563.pickle -d {params.output_dir}/whatsgnu/db
+                    db_path="{params.output_dir}/whatsgnu/db/TB_Ortholog_6563.pickle"
+                    whatsgnu_mode="ortholog"
                 fi
             elif [ "{params.db_path}" != "None" ]; then
                 db_path="{params.db_path}"
-                if [ "{params.species}" == "sepi" ]; then
-                    whatsgnu_mode="basic"
-                else
-                    whatsgnu_mode="ortholog"
-                fi
+                case "{params.species}" in
+                    sepi|ecoli|pa)
+                        whatsgnu_mode="basic"
+                        ;;
+                    *)
+                        whatsgnu_mode="ortholog"
+                        ;;
+                esac
             fi
             
             cd {params.output_dir}/whatsgnu/
@@ -82,5 +101,15 @@ rule whatsgnu_profiler:
             -tn "${{top_genomes}}" \
             -o "${{genome_name}}" \
             "${{input_faa_path}}"
+
+            # The kp and mtb databases name genomes as <strain>_<GenBank accession>[_<ST>_]
+            # (e.g. ST_15_K087_GCA_002417375.1_ST15_), which NCBI Datasets cannot download.
+            # Keep only the GenBank accession in column 1 so the downstream rules see bare accessions.
+            if [ "{params.species}" == "kp" ] || [ "{params.species}" == "mtb" ]; then
+                awk 'BEGIN {{FS = OFS = "\t"}}
+                     NR > 1 && match($1, /GCA_[0-9]+[.][0-9]+/) {{$1 = substr($1, RSTART, RLENGTH)}}
+                     {{print}}' "${{out_file}}" > "${{out_file}}.tmp"
+                mv "${{out_file}}.tmp" "${{out_file}}"
+            fi
         fi
         """

@@ -138,10 +138,6 @@ def validate_profiler(args):
                 args.whatsgnu_db_path = "None"
             else:
                 print(f"WhatsGNU database file found at: {args.whatsgnu_db_path}")
-        # whatsgnu_profiler.smk downloads databases for sau, sepi, cdiff and kp only
-        # This is ad-hoc. Will be solved when the b. pertussis database is added to the whatsGNU repo
-        if args.species == "bp" and args.whatsgnu_db_path == "None":
-            raise ValidationError("No WhatsGNU database is downloaded automatically for bp (Bordetella pertussis). Provide one with --whatsgnu_db_path, or use --local_query_dir.")
         # Check top_genomes
         if args.top_genomes < 100:
             raise ValidationError("top_genomes must be at least 100 for reliable profiling")

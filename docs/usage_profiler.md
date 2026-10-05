@@ -2,7 +2,7 @@
 Infers substitution probabilities and mobile genetic element (MGE) dynamics leveraging publicly available genomes.
 ```
 silosim profiler -h
-usage:  profiler [-h] --input_genome INPUT_GENOME [--output OUTPUT] --species {sau,sepi,cdiff,kp}
+usage:  profiler [-h] --input_genome INPUT_GENOME [--output OUTPUT] --species {sau,sepi,cdiff,kp,ecoli,pa,mtb}
                  [--top_genomes TOP_GENOMES] [--cov_cutoff COV_CUTOFF] [--ani_threshold ANI_THRESHOLD]
                  [--bakta_db_type BAKTA_DB_TYPE] [--bakta_db_path BAKTA_DB_PATH]
                  [--whatsgnu_db_path WHATSGNU_DB_PATH] [-t THREADS] [--prefix PREFIX] [--conda_prefix CONDA_PREFIX]
@@ -12,13 +12,16 @@ usage:  profiler [-h] --input_genome INPUT_GENOME [--output OUTPUT] --species {s
   --input_genome INPUT_GENOME
                         Path to genome assembly in FASTA format
   --output OUTPUT       Output directory of the profiling results. If not provided, defaults to silosim_profiler_output_<YYYY_MM_DD_HHMMSS> under the current working directory.
-  --species {sau,sepi,cdiff,kp}
+  --species {sau,sepi,cdiff,kp,ecoli,pa,mtb}
                         Bacteria species.
-                        Available options: [sau, sepi, cdiff, kp]
+                        Available options: [sau, sepi, cdiff, kp, ecoli, pa, mtb]
                         sau: Staphylococcus aureus
                         sepi: Staphylococcus epidermidis
-                        cdiff: Clostridium difficile
+                        cdiff: Clostridioides difficile
                         kp: Klebsiella pneumoniae
+                        ecoli: Escherichia coli
+                        pa: Pseudomonas aeruginosa
+                        mtb: Mycobacterium tuberculosis
   --local_query_dir LOCAL_QUERY_DIR
                         Path to the local query directory containing genome assemblies in FASTA format.If provided, the pipeline will use these local genomes for profiling instead of downloading them from NCBI.The WhatsGNU-based approach to fetch top genomes will be skipped if this option is provided.
   --top_genomes TOP_GENOMES
@@ -69,8 +72,11 @@ usage:  profiler [-h] --input_genome INPUT_GENOME [--output OUTPUT] --species {s
     Indicate the species being analyzed. Currently supported species include:
       - `sau` (*Staphylococcus aureus*)
       - `sepi` (*Staphylococcus epidermidis*)
-      - `cdiff` (*Clostridium difficile*)
+      - `cdiff` (*Clostridioides difficile*)
       - `kp` (*Klebsiella pneumoniae*)
+      - `ecoli` (*Escherichia coli*)
+      - `pa` (*Pseudomonas aeruginosa*)
+      - `mtb` (*Mycobacterium tuberculosis*)
 
 ## Optional Input
 1. **Output Directory(--output):**

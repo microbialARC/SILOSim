@@ -39,8 +39,12 @@ rule bakta_annotation_profiler:
             taxon_args="--genus Klebsiella --species pneumoniae"
         elif [ "${{species}}" == "sepi" ]; then
             taxon_args="--genus Staphylococcus --species epidermidis"
-        elif [ "${{species}}" == "bp" ]; then
-            taxon_args="--genus Bordetella --species pertussis"
+        elif [ "${{species}}" == "ecoli" ]; then
+            taxon_args="--genus Escherichia --species coli"
+        elif [ "${{species}}" == "pa" ]; then
+            taxon_args="--genus Pseudomonas --species aeruginosa"
+        elif [ "${{species}}" == "mtb" ]; then
+            taxon_args="--genus Mycobacterium --species tuberculosis"
         else
             echo "ERROR: Unknown species ${{species}} for Bakta annotation." >&2
             exit 1
