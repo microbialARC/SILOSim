@@ -575,6 +575,26 @@ get_chr_bins <- function(input_genome_name,
     cds_table <- cds_table[!cds_on_dropped_contig, , drop = FALSE]
   }
   
+  ## Split CDS that wrap around the origin of a circular contig ----
+  # Bakta writes an origin-spanning CDS as start..end with end past the contig
+  # length (e.g. 3417..4796 on a 4439 bp plasmid). Left as one bin it runs off
+  # its contig into the next one, or off the end of the concatenated genome.
+  # Cut it at the origin into start..contig_length and 1..(end - contig_length);
+  # both pieces keep the gene's name, locus tag and strand.
+  contig_length_by_name <- setNames(contig_positions$length, contig_positions$ctg)
+  cds_contig_length <- contig_length_by_name[cds_table$contig]
+  cds_wraps_origin <- cds_table$end > cds_contig_length
+  
+  if (any(cds_wraps_origin)) {
+    message("Splitting ", sum(cds_wraps_origin),
+            " CDS that span the origin of a circular contig.")
+    wrapped_part <- cds_table[cds_wraps_origin, , drop = FALSE]
+    wrapped_part$start <- 1L
+    wrapped_part$end <- as.integer(wrapped_part$end - cds_contig_length[cds_wraps_origin])
+    cds_table$end[cds_wraps_origin] <- as.integer(cds_contig_length[cds_wraps_origin])
+    cds_table <- rbind(cds_table, wrapped_part)
+  }
+  
   cds_table$new_start <- cds_table$contig_offset + cds_table$start
   cds_table$new_end <- cds_table$contig_offset + cds_table$end
   
@@ -632,6 +652,18 @@ get_chr_bins <- function(input_genome_name,
   chr_bins <- chr_bins[, c("bin_index","start", "end", "length",
                            "gene", "locus_tag", "original_contig", "strand")]
   rownames(chr_bins) <- NULL
+  
+  ## Every bin must sit inside its own contig ----
+  # Steps 6-8 index genome-length vectors by bin coordinates, so a bin that
+  # leaks past its contig yields NA (last contig) or silently wrong stats.
+  bin_contig_row <- match(chr_bins$original_contig, contig_positions$ctg)
+  bin_outside_contig <- chr_bins$start < contig_positions$new_start[bin_contig_row] |
+    chr_bins$end > contig_positions$new_end[bin_contig_row]
+  if (any(bin_outside_contig)) {
+    stop(sum(bin_outside_contig), " bin(s) extend past their contig, first: ",
+         chr_bins$locus_tag[bin_outside_contig][1], " (",
+         chr_bins$original_contig[bin_outside_contig][1], ")", call. = FALSE)
+  }
   
   message("Built ", nrow(chr_bins), " bins (",
           sum(chr_bins$gene != "non-cds"), " coding, ",
