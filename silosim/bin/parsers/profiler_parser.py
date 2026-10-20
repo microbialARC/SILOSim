@@ -79,8 +79,8 @@ Default is 100."""
         "--cov_cutoff",
         type=float,
         default=0.7,
-        help="""Coverage cutoff for MGE inference.
-Genomic regions with coverage above this cutoff will be inferred as MGEs.
+        help="""Coverage cutoff for MGE inference, as a fraction of the maximum coverage.
+Genomic regions with coverage below this cutoff will be inferred as MGEs.
 Default is 0.7."""
     )
 

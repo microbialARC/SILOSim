@@ -35,8 +35,8 @@ usage:  profiler [-h] --input_genome INPUT_GENOME [--output OUTPUT] --species {s
                         Regions shorter than this threshold are excluded from the MGE analysis.
                         Default is 100.
   --cov_cutoff COV_CUTOFF
-                        Coverage cutoff for MGE inference.
-                        Genomic regions with coverage above this cutoff will be inferred as MGEs.
+                        Coverage cutoff for MGE inference, as a fraction of the maximum coverage.
+                        Genomic regions with coverage below this cutoff will be inferred as MGEs.
                         Default is 0.7.
   --ani_threshold ANI_THRESHOLD
                         Average Nucleotide Identity (ANI) exclusion threshold (default: 95).
@@ -105,8 +105,9 @@ usage:  profiler [-h] --input_genome INPUT_GENOME [--output OUTPUT] --species {s
     Regions shorter than this threshold are excluded from the MGE analysis (default: 100).
 9. **Coverage Cutoff(--cov_cutoff):**
 
-    Coverage cutoff for MGE inference. Genomic regions with coverage above this cutoff will be inferred as MGEs.
-    Default is 0.7, which means genomic regions with coverage above 70% will be inferred as MGEs.
+    Coverage cutoff for MGE inference. A site's coverage is the number of query genomes that align to it, and the cutoff is a fraction of the highest coverage in the input genome.
+    Genomic regions where coverage stays below this cutoff for at least `--min_mge_len` bp will be inferred as MGEs, since query genomes consistently fail to align there.
+    Default is 0.7, which means genomic regions with coverage below 70% of the maximum coverage will be inferred as MGEs.
 10. **Threads(--threads / -t):**
 
     Number of threads to use (default is 1). It is highly recommended to increase the thread count using this option to improve performance, regardless of dataset size.
