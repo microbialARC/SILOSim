@@ -71,7 +71,7 @@ def add_simulator_parser(subparsers):
 - JC69: No parameters required (leave empty)
 
 - K2P: Single float value
-  - Transition/transversion ratio (kappa) > 0
+  - Transition/transversion rate ratio (kappa) > 0; a substitution is a transition with probability kappa/(kappa+2)
 
 - K3P: Three comma-separated floats (all > 0)
   - Position 1: Transition rate (alpha)

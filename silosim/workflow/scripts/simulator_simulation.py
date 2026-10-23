@@ -31,12 +31,17 @@ class SequenceMutator:
 				if not all(col in self.weight_mutation_df.columns for col in ['position', 'entropy']):
 					raise ValueError("Weighted mutation data is missing required columns. Required: position, entropy")
 				# Select only position and entropy columns
-				self.weight_mutation_df = self.weight_mutation_df[['position', 'entropy']]
+				self.weight_mutation_df = self.weight_mutation_df[['position', 'entropy']].copy()
+				# The profiler writes NA entropy for ambiguous positions. Treat them as 0 so they get the basal value below
+				if self.weight_mutation_df['entropy'].isna().any():
+					print(f"{self.weight_mutation_df['entropy'].isna().sum()} NA entropy values found and set to 0.")
+					self.weight_mutation_df['entropy'] = self.weight_mutation_df['entropy'].fillna(0)
 				# There are 2 types of positions here. The first is the alignment position while the second is the original entropy profile position
 				# The alignment position is the position in the MSA, while the profile position is the position in the original start genome for simulation
 				# The alignment position is mutatable due to gain and loss of MGEs, while the profile position is fixed and will be used for visualization
+				# The profile positions are 1-based like the profiler output, while the alignment positions are 0-based indices into the sequence
 				self.weight_mutation_df['profile_position'] = self.weight_mutation_df['position'].astype(int)
-				self.weight_mutation_df['alignment_position'] = self.weight_mutation_df['position'].astype(int)
+				self.weight_mutation_df['alignment_position'] = self.weight_mutation_df['position'].astype(int) - 1
 				# Remove the original 'position' column after assigning alignment and profile positions
 				self.weight_mutation_df.drop(columns=['position'], inplace=True)
 				self.entropy_value = self.weight_mutation_df['entropy'].copy()
@@ -63,14 +68,21 @@ class SequenceMutator:
 				print(f"Error reading weighted mutation data: {e}")
 				print("Rolling back to uniform random selection")
 				self.weight_mutation_df = None
-				use_weight_mutate = False
-		else:
+				self.use_weight_mutate = False
+		if not self.use_weight_mutate or self.weight_mutate_data is None:
 			# If weighted mutation is not used, create a data frame to map the transient alignment position to profile position mapping
 			# use concatenated_contig as the reference sequence
+			# Profile positions are 1-based to match the weighted mutation profile
+			self.use_weight_mutate = False
 			self.position_df = pd.DataFrame({
 				'alignment_position': range(len(self.concatenated_contig)),
-				'profile_position': range(len(self.concatenated_contig))
+				'profile_position': range(1, len(self.concatenated_contig) + 1)
 			})
+
+	# Pick the base that original_base mutates to, using the probabilities of the substitution model
+	def substitute(self, original_base):
+		targets, weights = self.probability[original_base]
+		return str(numpy.random.choice(targets, p=weights))
 
 	# This is the function for weighted mutation using the entropy values
 	def weight_mutate(self, seq, node = None):
@@ -94,10 +106,10 @@ class SequenceMutator:
 			# If the original base is '-', meaning that this location is lost in the genome
 			# Keep selecting new positions until the original base is not '-'
 			while original_base == "-":
-				pos = numpy.random.choice(self.weight_mutation_df['alignment_position'], p=self.weight_mutation_df['normalized_entropy'])
+				pos = numpy.random.choice(valid_positions['alignment_position'], p=valid_positions['normalized_entropy'])
 				original_base = out[pos]
 			# probability is determined by the substitution model
-			new_base = numpy.random.choice(self.probability[original_base])
+			new_base = self.substitute(original_base)
 			# instead of slicing and concatenating strings
 			# directly modify in place in the list
 			out[pos] = new_base
@@ -135,7 +147,7 @@ class SequenceMutator:
 			pos = numpy.random.choice(selection)
 			original_base = out[pos]
 		# probability is determined by the substitution model
-		new_base = numpy.random.choice(self.probability[original_base])
+		new_base = self.substitute(original_base)
 		# instead of slicing and concatenating strings
 		# which could be slow
 		# I just modify in place
@@ -357,7 +369,7 @@ class SequenceMGEser:
 			'alignment_position': range(bin_gain_aln_insertion, bin_gain_aln_insertion + length_insert_mge_seq),
 			# profile positions in the new part are set to the insertion profile position
 			'profile_position': bin_gain_profile_insertion,
-			'entropy': insert_mge_entropy['entropy'].values
+			'entropy': insert_mge_entropy['entropy'].fillna(0).values
 		})
 		# Concatenate all parts
 		updated_weight_mutation_df = pd.concat([upper_part, new_part, lower_part], ignore_index=True)
@@ -477,98 +489,53 @@ random.seed(rseed)
 numpy.random.seed(rseed)
 
 alpha=["A","T","C","G"]
-transition={}
-transition["A"]="G"
-transition["G"]="A"
-transition["C"]="T"
-transition["T"]="C"
-other1,other2={},{}
-other1["A"],other2["A"]="C","T"
-other1["T"],other2["T"]="G","A"
-other1["C"],other2["C"]="G","A"
-other1["G"],other2["G"]="C","T"
 
-# Creates the substitution model with Kappa or sub_param
-probability={}
+# Creates the substitution model with sub_param
+# rate[N][M] is the relative rate of N mutating to M. The rates are symmetric, so each pair is set once
+rate = {N: {} for N in alpha}
+def set_pair_rate(base1, base2, pair_rate):
+	rate[base1][base2] = pair_rate
+	rate[base2][base1] = pair_rate
+
 if sub_model == "JC69":
-	for N in alpha:
-		toto = list(alpha)
-		toto.remove(N)
-		probability[N] = toto
+	# All substitutions are equally likely
+	for base1, base2 in [("A","G"), ("C","T"), ("A","C"), ("A","T"), ("G","C"), ("G","T")]:
+		set_pair_rate(base1, base2, 1.0)
 elif sub_model == "K2P":
-	# If the model is K2P
-	# sub_param is Kappa
+	# sub_param is kappa, the transition/transversion rate ratio
+	# Each base has 1 transition at rate kappa and 2 transversions at rate 1,
+	# so a substitution is a transition with probability kappa / (kappa + 2)
 	kappa = float(sub_param)
-	for N in alpha:
-		probability[N]=[]
-		i=0
-		while i < round(10 * kappa,0):
-			probability[N].append(transition[N])
-			i+=1
-		i=0
-		while i < 5:
-			probability[N].append(other1[N])
-			probability[N].append(other2[N])
-			i+=1
+	set_pair_rate("A","G", kappa)
+	set_pair_rate("C","T", kappa)
+	for base1, base2 in [("A","C"), ("A","T"), ("G","C"), ("G","T")]:
+		set_pair_rate(base1, base2, 1.0)
 elif sub_model == "K3P":
-	beta={}
-	beta["A"]="C"
-	beta["C"]="A"
-	beta["G"]="T"
-	beta["T"]="G"
-	gamma={}
-	gamma["A"]="T"
-	gamma["T"]="A"
-	gamma["C"]="G"
-	gamma["G"]="C"
-	toto = sub_param.split(",")
-	ts,tv1,tv2= float(toto[0].strip(" ")) ,  float(toto[1].strip(" "))  , float(toto[2].strip(" ")) 
-	for N in alpha:
-		probability[N]=[]
-		i=0
-		while i < round(100 * ts,0):
-			probability[N].append(transition[N])
-			i+=1
-		i=0
-		while i < round(100 * tv1,0):
-			probability[N].append(beta[N])
-			i+=1
-		i=0
-		while i < round(100 * tv2,0):
-			probability[N].append(gamma[N])
-			i+=1
+	# sub_param is the transition rate (alpha), the transversion rate beta (A↔C, G↔T) and the transversion rate gamma (A↔T, C↔G)
+	ts, tv1, tv2 = [float(param.strip(" ")) for param in sub_param.split(",")]
+	set_pair_rate("A","G", ts)
+	set_pair_rate("C","T", ts)
+	set_pair_rate("A","C", tv1)
+	set_pair_rate("G","T", tv1)
+	set_pair_rate("A","T", tv2)
+	set_pair_rate("C","G", tv2)
 elif sub_model == "GTR":
-	toto = sub_param.split(",")
-	a,b,c,d,e,f = float(toto[0].strip(" ")) ,  float(toto[1].strip(" "))  , float(toto[2].strip(" ")) ,float(toto[3].strip(" ")) ,  float(toto[4].strip(" "))  , float(toto[5].strip(" ")) 
-	for N in alpha:
-		probability[N]=[]
-	i=0
-	while i < round(100 * a,0):
-		probability["A"].append("G")
-		probability["G"].append("A")
-		i+=1
-	i=0
-	while i < round(100 * b,0):
-		probability["A"].append("C")
-		probability["C"].append("A")
-		i+=1
-	i=0
-	while i < round(100 * c,0):
-		probability["A"].append("T")
-		probability["T"].append("A")
-		i+=1
-	while i < round(100 * d,0):
-		probability["G"].append("C")
-		probability["C"].append("G")
-		i+=1
-	while i < round(100 * e,0):
-		probability["G"].append("T")
-		probability["T"].append("G")
-		i+=1
-	while i < round(100 * f,0):
-		probability["C"].append("T")
-		probability["T"].append("C")
-		i+=1
+	# sub_param is the rates of A↔G, A↔C, A↔T, G↔C, G↔T and C↔T in this order
+	a, b, c, d, e, f = [float(param.strip(" ")) for param in sub_param.split(",")]
+	set_pair_rate("A","G", a)
+	set_pair_rate("A","C", b)
+	set_pair_rate("A","T", c)
+	set_pair_rate("G","C", d)
+	set_pair_rate("G","T", e)
+	set_pair_rate("C","T", f)
+
+# probability[N] holds the bases N can mutate to and the probability of each,
+# using the rates directly so that small rates are not rounded away
+probability={}
+for N in alpha:
+	targets = list(rate[N].keys())
+	weights = numpy.array([rate[N][M] for M in targets], dtype=float)
+	probability[N] = (targets, weights / weights.sum())
 
 # In my version
 # The function to generate random sequence is removed
@@ -723,61 +690,21 @@ values = list(rev.keys())
 values.sort()
 
 # Build the dictionary interval to define which branches overlapped in time
+# A branch starts where its parent ends (0 for the branches from the root), taken from cumul directly so the
+# start of a child and the end of its parent are the same number
 interval={}
 for node in cumul:
-	interval[node] = [cumul[node] - branch_length[node] , cumul[node] ]
+	interval[node] = [cumul[parent[node]] if node in parent else 0.0, cumul[node]]
 
-# Creat new internal nodes
-# The original code set MIN,MAX=10,0
-# In my version, the unit of the branch length of the tree is year 
-# That say, if any branch length is ≥ 10
-# the MIN won't be updated correctly.
-# My correction:
-# the min_period is set to max in the system and will be corrected
-# the max_period is set to 0 and will be corrected
-min_period = sys.maxsize
-max_period = 0
-for node in cumul:
-	if cumul[node]>max_period:
-		max_period = cumul[node]
-	if branch_length[node] != 0:
-		if branch_length[node] < min_period:
-			min_period= branch_length[node]
-
-
-# Time-slice scanning to find overlapping branches
-# This is the input for determining the time intervals downstream
-branch_overlap_windows = {}
-current_interval = 0
-time_cursor = 0
-
-while time_cursor < max_period:
-	tmp=[]
-	for node in interval:
-		deb,fin = interval[node][0],interval[node][1]
-		if time_cursor >= deb and time_cursor <= fin:
-			tmp.append(node)
-	tmp.sort()
-	vector = "-".join(tmp)
-	if vector in branch_overlap_windows:
-		pass
-	else:
-		current_interval +=1
-		branch_overlap_windows[vector] = current_interval
-	time_cursor += min_period/2
-
-# Find valid time intervals
-# finds the actual time interval where ALL branches in that combination overlap simultaneously.
+# Split the time-scale phylogeny into time windows at every start and end of a branch
+# Each window holds the branches that exist through the whole window, so every branch is
+# simulated for exactly its branch length, however close the starts and ends of different branches are
+time_boundaries = sorted(set(time_point for node in interval for time_point in interval[node]))
 interval_windows={}
-for branch_vector in branch_overlap_windows:
-    interval_id = branch_overlap_windows[branch_vector]
-    branch_list = branch_vector.split("-")
-    interval_starts, interval_ends = [], []
-    for branch in branch_list:
-        start, end = interval[branch][0], interval[branch][1]
-        interval_starts.append(start)
-        interval_ends.append(end)
-    interval_windows[interval_id] = [branch_list, max(interval_starts), min(interval_ends)]
+for window_start, window_end in zip(time_boundaries[:-1], time_boundaries[1:]):
+	window_nodes = sorted(node for node in interval if interval[node][0] <= window_start and interval[node][1] >= window_end)
+	if window_nodes:
+		interval_windows[len(interval_windows) + 1] = [window_nodes, window_start, window_end]
 
 # The total number of time intervals
 max_intervals = max(interval_windows.keys())
@@ -813,7 +740,7 @@ per_event_genomes = []
 nu_sum=[]
 recomb_size_sum=[]
 # Iterate through each time interval to simulate evolution
-for interval_idx in range(1, max_intervals):
+for interval_idx in range(1, max_intervals + 1):
 	interval_node = interval_windows[interval_idx][0]
 
 	# Update sequences and the length for all nodes in the current interval
@@ -871,7 +798,7 @@ for interval_idx in range(1, max_intervals):
 		if event_category == "mutation":
 			# mutated genomes and mutation info
 			# Use weighted or uniform mutation explicitly based on configuration
-			if use_weight_mutate:
+			if mutator.use_weight_mutate:
 				mutated_seq, mutation_info = mutator.weight_mutate(sequence[event_node], node=event_node)
 			else:
 				mutated_seq, mutation_info = mutator.uniform_mutate(sequence[event_node], node=event_node)
@@ -1034,7 +961,7 @@ for interval_idx in range(1, max_intervals):
 						rext_snp_pos = numpy.random.choice(valid_positions)
 						snp_pos.append(str(start + rext_snp_pos))
 						rext_old_base = new_rext_seq[rext_snp_pos]
-						rext_new_base = numpy.random.choice(probability[rext_old_base])
+						rext_new_base = mutator.substitute(rext_old_base)
 						new_rext_seq[rext_snp_pos] = rext_new_base
 				# Convert back to string properly
 				new_rext_seq_str = ''.join(new_rext_seq)
@@ -1128,7 +1055,7 @@ if mgeser.chr_bins is not None:
 	mgeser.chr_bins_df.to_csv(os.path.join(intermediate_path, "chromosome_bins.csv"), index=False)
 
 # Export the weight mutation DataFrame
-if use_weight_mutate and mutator.weight_mutation_df is not None:
+if mutator.use_weight_mutate and mutator.weight_mutation_df is not None:
 	mutator.weight_mutation_df.to_csv(os.path.join(intermediate_path, "weight_mutation.csv"), index=False)
 else:
 	mutator.position_df.to_csv(os.path.join(intermediate_path, "position_info.csv"), index=False)

@@ -240,10 +240,10 @@ def validate_simulator(args):
         try:
             kappa = float(args.model_parameters)
         except (TypeError, ValueError):
-            raise ValidationError("K2P model requires transition/transversion ratio(kappa) as parameter. The parameter should be provided as a single float value greater than 0.")
+            raise ValidationError("K2P model requires transition/transversion rate ratio (kappa) as parameter. The parameter should be provided as a single float value greater than 0.")
         if kappa <= 0:
-            raise ValidationError("Transition/transversion ratio(kappa) must be a float value greater than 0 for K2P model")
-        print(f"K2P model parameter (transition/transversion ratio, kappa) set to kappa: {kappa}")
+            raise ValidationError("Transition/transversion rate ratio (kappa) must be a float value greater than 0 for K2P model")
+        print(f"K2P model parameter (transition/transversion rate ratio, kappa) set to kappa: {kappa}")
     elif args.substitution_model == "K3P":
         print("K3P model selected, validating parameters...")
         if not args.model_parameters:
